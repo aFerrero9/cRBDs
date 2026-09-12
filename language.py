@@ -1,7 +1,7 @@
 from collections import deque
 from itertools import product
 
-# Nodos
+# Nodes
 
 class Node:
     def __init__(self, id_name: str, is_functional: bool = True):
@@ -43,7 +43,7 @@ class RBD:
     def _is_dag(self):
         """Verifies that the graph has no cycles using DFS."""
         
-        # Build the adjacency list
+        # Build adjacency list
         graph = {n: [] for n in self.nodes}
         for u, v in self.edges:
             graph[u].append(v) 
@@ -82,12 +82,35 @@ class RBD:
         return True
 
     def _check_connectivity(self):
-        """Verifica que todo nodo funcional sea alcanzable desde START y alcance END."""
-        # TODO
-        # 1. BFS desde self.start para ver qué nodos son alcanzables.
-        # 2. BFS inverso desde self.end para ver quiénes pueden alcanzarlo.
-        # 3. Validar que self.functional_nodes esté contenido en la intersección de ambos.
-        return True 
+        """Verifies that all nodes in the graph belong to a valid path between start and end."""
+        
+        def _bfs(adj_list: dict, init: Node):
+            visited = set([init])
+            queue = deque([init])
+
+            while queue:
+                node = queue.popleft()
+                for neighbor in adj_list[node]:
+                    if neighbor not in visited:
+                        queue.append(neighbor)
+                        visited.add(neighbor)
+            return visited
+
+        # Build adjacency list
+        graph = {n: [] for n in self.nodes}
+        for u, v in self.edges:
+            graph[u].append(v)
+
+        # Build adjacency backwards
+        reversed_edges = {e[::-1] for e in self.edges}
+        reversed_graph = {n: [] for n in self.nodes}
+        for u, v in reversed_edges:
+            reversed_graph[u].append(v)
+
+        from_start = _bfs(graph, self.start)
+        from_end = _bfs(reversed_graph, self.end)
+
+        return (from_start & from_end) == self.nodes
 
     def _rename_edges(self, edges_set, old_node, new_node):
         """ Apply G[old_node <- new_node]."""
