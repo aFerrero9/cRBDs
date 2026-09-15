@@ -1,12 +1,14 @@
 from collections import deque
 from itertools import product
+import copy
 
 # Nodes
 
 class Node:
-    def __init__(self, id_name: str, is_functional: bool = True):
+    def __init__(self, id_name: str, is_functional: bool = True, is_up: bool = True):
         self.id = id_name
         self.is_functional = is_functional
+        self.is_up = is_up
 
     def __hash__(self):
         return hash(self.id)
@@ -15,9 +17,10 @@ class Node:
         return isinstance(other, Node) and self.id == other.id
 
     def __repr__(self):
-        type_str = "F" if self.is_functional else "NF"
-        return f"Node({self.id}, {type_str})"
-
+            type_str = "F" if self.is_functional else "NF"
+            state_str = f"is up={self.up}"
+            
+            return f"Node({self.id}, {type_str}, {state_str})"
 
 # RBDs
 
@@ -39,6 +42,8 @@ class RBD:
             raise ValueError("Invalid RBD: The graph contains cycles.")
         if not self._check_connectivity():
             raise ValueError("Invalid RBD: Functional nodes are structurally isolated.")
+        if self.start.is_functional or self.end.is_functional:
+            raise ValueError("Invalid RBD: START or END are marked as functional nodes")
 
     def _is_dag(self):
         """Verifies that the graph has no cycles using DFS."""
@@ -82,7 +87,7 @@ class RBD:
         return True
 
     def _check_connectivity(self):
-        """Verifies that all nodes in the graph belong to a valid path between start and end."""
+        """Verifies that all nodes in the graph belong to a path between start and end (no isolated nodes)."""
         
         def _bfs(adj_list: dict, init: Node):
             visited = set([init])
@@ -112,7 +117,8 @@ class RBD:
 
         return (from_start & from_end) == self.nodes
 
-    def _rename_edges(self, edges_set, old_node, new_node):
+    @staticmethod
+    def _rename_edges(edges_set, old_node, new_node):
         """ Apply G[old_node <- new_node]."""
         new_edges = set()
         for u, v in edges_set:
@@ -127,58 +133,67 @@ class RBD:
             
         return new_edges
 
-    def __or__(self, other):
-        """ Parallel composition: self || other"""
+    def __floordiv__(self, other):
+        """Parallel composition: self // other"""
         if not isinstance(other, RBD):
             return NotImplemented
 
-        # Crete new nodes for renaming
-        new_start = Node(f"START_{self.start.id}_{other.start.id}", is_functional=False)
-        new_end = Node(f"END_{self.end.id}_{other.end.id}", is_functional=False)
+        # Create copies to avoid references
+        selfc = copy.deepcopy(self)
+        otherc = copy.deepcopy(other)
 
-        # (V_A U V_B)
-        new_nodes = self.nodes.union(other.nodes)
-        new_nodes.discard(self.start)
-        new_nodes.discard(other.start)
-        new_nodes.discard(self.end)
-        new_nodes.discard(other.end)
-        new_nodes.update([new_start, new_end])
+        # Create the new non-functional nodes
+        new_start = Node("START", is_functional=False)
+        new_end = Node("END", is_functional=False)
+
+        # Delete old NF nodes
+        nodes_self = selfc.nodes - {selfc.start, selfc.end}
+        nodes_other = otherc.nodes - {otherc.start, otherc.end}
+
+        # Create new nodes set
+        new_nodes = nodes_self | nodes_other | {new_start, new_end}
 
         # Edge renaming
-        e_a = self._rename_edges(self.edges, self.start, new_start)
-        e_a = self._rename_edges(e_a, self.end, new_end)
+        e_self = self._rename_edges(selfc.edges, selfc.start, new_start)
+        e_self = self._rename_edges(e_self, selfc.end, new_end)
         
-        e_b = self._rename_edges(other.edges, other.start, new_start)
-        e_b = self._rename_edges(e_b, other.end, new_end)
+        e_other = self._rename_edges(otherc.edges, otherc.start, new_start)
+        e_other = self._rename_edges(e_other, otherc.end, new_end)
 
-        return RBD(new_nodes, e_a.union(e_b), new_start, new_end)
+        return RBD(new_nodes, e_self | e_other, new_start, new_end)
 
     def __rshift__(self, other):
-        """Composición Serial: self ; other (operador >>)"""
+        """Serial composition: self >> other"""
         if not isinstance(other, RBD):
             return NotImplemented
+        if not self.functional_nodes.isdisjoint(other.functional_nodes):
+            raise ValueError("Systems cannot share functional nodes.")
 
-        # Restricción estricta: V_fA intersection V_fB = empty
-        if self.functional_nodes.intersection(other.functional_nodes):
-            raise ValueError("Serial composition requires disjoint functional node sets.")
+        # Create copies to avoid references
+        selfc = copy.deepcopy(self)
+        otherc = copy.deepcopy(other)
 
-        new_start = self.start
-        new_end = other.end
+        # Create the new non-functional nodes
+        new_start = Node("START", is_functional=False)
+        new_end = Node("END", is_functional=False)
 
-        # Nodos intermedios a eliminar: self.end y other.start
-        new_nodes = self.nodes.union(other.nodes)
-        new_nodes.discard(self.end)
-        new_nodes.discard(other.start)
+        # Create new bridge edges
+        self_final_nodes = {n for n in selfc.nodes if (n, selfc.end) in selfc.edges}
+        other_first_nodes = {n for n in otherc.nodes if (otherc.start, n) in otherc.edges}
+        
+        new_bridge_edges = set(product(self_final_nodes, other_first_nodes))
 
-        # Calculamos aristas puente (Bridge edges)
-        preds_a = {u for u, v in self.edges if v == self.end}
-        succs_b = {v for u, v in other.edges if u == other.start}
-        bridge_edges = set(product(preds_a, succs_b))
+        # Delete old edges
+        self_old_edges_deleted = {(u, v) for u, v in selfc.edges if v != selfc.end}
+        other_old_edges_deleted = {(u, v) for u, v in otherc.edges if u != otherc.start}
 
-        # Filtramos aristas originales eliminando las que tocaban los nodos borrados
-        e_a = {(u, v) for u, v in self.edges if v != self.end}
-        e_b = {(u, v) for u, v in other.edges if u != other.start}
+        new_edges = self_old_edges_deleted | other_old_edges_deleted | new_bridge_edges
 
-        new_edges = e_a.union(e_b).union(bridge_edges)
+        # Delete old NF nodes
+        new_nodes = ((selfc.nodes | otherc.nodes) - {selfc.end, otherc.start, selfc.start, otherc.end}) | {new_start, new_end}
+
+        # Edge renaming
+        new_edges = self._rename_edges(new_edges, selfc.start, new_start)
+        new_edges = self._rename_edges(new_edges, otherc.end, new_end)
 
         return RBD(new_nodes, new_edges, new_start, new_end)
