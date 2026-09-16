@@ -1,0 +1,47 @@
+# ==========================================
+# 1. Archivos generados por tu proyecto (RBD)
+# ==========================================
+# Ignorar las imágenes generadas por Graphviz para no llenar el repo
+*.png
+*.pdf
+*.svg
+# Nombres específicos que usamos en tus pruebas
+rbd_diagram*
+mi_sistema_rbd*
+
+# ==========================================
+# 2. Entorno de Python
+# ==========================================
+# Caché de archivos compilados
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Entornos virtuales (ignorar dependencias pesadas)
+venv/
+env/
+.venv/
+env.bak/
+/lib/
+/lib64/
+
+# Herramientas de testeo y cobertura
+.coverage
+htmlcov/
+.pytest_cache/
+
+# ==========================================
+# 3. Editores de Código (VS Code)
+# ==========================================
+.vscode/
+*.code-workspace
+
+# ==========================================
+# 4. Sistema Operativo (Mac / Linux)
+# ==========================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
