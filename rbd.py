@@ -270,7 +270,7 @@ class RBD:
             print(f"Error rendering graph. Ensure Graphviz binaries are installed on your OS. Details: {e}")
 
 
-
+# MINITEST
 
 def create_atomic_block(name: str) -> RBD:
     """Helper function to quickly create a single-component RBD."""
@@ -295,9 +295,7 @@ def create_atomic_block(name: str) -> RBD:
     pumps_subsystem = pump_a // pump_b
     system = pumps_subsystem >> valve >> sensor
 
-    # 3. Probamos el __repr__ en la consola
-    print("=== REPRESENTACIÓN EN TEXTO (REPR) ===")
     print(system)
-    print("======================================\n")
 
-    system.draw(filename="my_sistem_rbd", view=True) """
+    system.draw(filename="my_sistem_rbd", view=True)
+ """
