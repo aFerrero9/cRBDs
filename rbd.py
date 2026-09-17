@@ -131,11 +131,8 @@ class RBD:
             
         return new_edges
 
-    def __floordiv__(self, other):
-        """Parallel composition: self // other"""
-        if not isinstance(other, RBD):
-            return NotImplemented
-
+    def _graph_parallel_comp(self, other):
+        """ Aux function to accomplish graph composition """
         # Create copies to avoid references
         selfc = copy.deepcopy(self)
         otherc = copy.deepcopy(other)
@@ -165,17 +162,20 @@ class RBD:
         node_map = {n.id: n for n in new_nodes}
         
         # Rebuild the edges so u and v strictly point to the official instances
-        unified_edges = {(node_map[u.id], node_map[v.id]) for u, v in raw_new_edges}
+        new_edges = {(node_map[u.id], node_map[v.id]) for u, v in raw_new_edges}
 
-        return RBD(new_nodes, unified_edges, new_start, new_end)
-    
-    def __rshift__(self, other):
-        """Serial composition: self >> other"""
+        return new_nodes, new_edges, new_start, new_end
+        
+    def __floordiv__(self, other):
+        """ Parallel composition of RBDs: self // other"""
         if not isinstance(other, RBD):
             return NotImplemented
-        if not self.functional_nodes.isdisjoint(other.functional_nodes):
-            raise ValueError("Systems cannot share functional nodes.")
 
+        new_nodes, new_edges, new_start, new_end = self._graph_parallel_comp(other)
+
+        return RBD(new_nodes, new_edges, new_start, new_end)
+    
+    def _graph_serial_comp(self, other):
         # Create copies to avoid references
         selfc = copy.deepcopy(self)
         otherc = copy.deepcopy(other)
@@ -203,27 +203,50 @@ class RBD:
         new_edges = self._rename_edges(new_edges, selfc.start, new_start)
         new_edges = self._rename_edges(new_edges, otherc.end, new_end)
 
+        return new_nodes, new_edges, new_start, new_end
+
+    def __rshift__(self, other):
+        """ Serial composition of RBDs: self >> other"""
+        if not isinstance(other, RBD):
+            return NotImplemented
+        if not self.functional_nodes.isdisjoint(other.functional_nodes):
+            raise ValueError("Systems cannot share functional nodes when composing in series.")
+
+        new_nodes, new_edges, new_start, new_end = self._graph_serial_comp(other)
+
         return RBD(new_nodes, new_edges, new_start, new_end)
 
     def __repr__(self):
-        """String representation of the RBD topology (Adjacency List)."""
+        """String representation of the RBD topology (Adjacency List in BFS order)."""
         header = f"RBD(Functional Nodes: {len(self.functional_nodes)}, Total Edges: {len(self.edges)})"
         
-        # Build an adjacency dictionary using node IDs for cleaner visualization
+        # Build an adjacency dictionary using node IDs
         adj_list = {n.id: [] for n in self.nodes}
         for u, v in self.edges:
             adj_list[u.id].append(v.id)
             
-        # Create output lines
         lines = [header, "Topology:"]
         
-        # Sort keys for deterministic output. 'START' goes first.
-        sorted_nodes = sorted(adj_list.keys(), key=lambda x: (x != "START", x))
+        # BFS traversal to determine a natural printing order
+        visited = {self.start.id}
+        queue = deque([self.start.id])
+        bfs_order = []
         
-        for node_id in sorted_nodes:
+        while queue:
+            current_id = queue.popleft()
+            bfs_order.append(current_id)
+            
+            # Sort neighbors alphabetically for deterministic queuing of siblings
+            neighbors = sorted(adj_list[current_id])
+            for neighbor in neighbors:
+                if neighbor not in visited:
+                    visited.add(neighbor)
+                    queue.append(neighbor)
+                    
+        # Create output lines following the BFS logical order
+        for node_id in bfs_order:
             targets = adj_list[node_id]
             if targets:
-                # Sort targets for deterministic output
                 targets_str = ", ".join(sorted(targets))
                 lines.append(f"  {node_id} -> [{targets_str}]")
                 
