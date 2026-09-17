@@ -42,6 +42,8 @@ class RBD:
             raise ValueError("Invalid RBD: The graph contains cycles.")
         if not self._check_connectivity():
             raise ValueError("Invalid RBD: Functional nodes are structurally isolated.")
+        if len(self.functional_nodes) < 1:
+            raise ValueError("There must be at least 1 functional component.")
 
     def _is_dag(self):
         """Verifies that the graph has no cycles using DFS."""
@@ -255,40 +257,66 @@ class RBD:
     def draw(self, filename="rbd_diagram", view=True):
         """
         Generates and displays a visual representation of the RBD using Graphviz.
-        Functional nodes are drawn as rectangles, structural nodes as ellipses.
+        Forces parallel nodes to align vertically by calculating their topological depth.
         """
         try:
             import graphviz
+            from collections import deque
         except ImportError:
             raise ImportError("The 'graphviz' package is required. Run: pip install graphviz")
 
-        # Create a directed graph. 'LR' forces Left-to-Right layout (standard for RBDs).
         dot = graphviz.Digraph(comment='Reliability Block Diagram')
         dot.attr(rankdir='LR') 
-        
-        # General node attributes for better aesthetics
         dot.attr('node', fontname='Helvetica', fontsize='12', margin='0.1')
 
-        # Add nodes with specific shapes based on their functional nature
-        for node in self.nodes:
-            if node.is_functional:
-                # Functional components as rectangles (boxes)
-                # Color can dynamically change if it's broken during a simulation
-                color = 'lightblue' if node.is_up else 'salmon'
-                dot.node(node.id, node.id, shape='box', style='filled', fillcolor=color)
-            else:
-                # Structural boundaries (START/END) as ellipses
-                dot.node(node.id, node.id, shape='ellipse', style='filled', fillcolor='lightgray')
+        # 1. Calculate topological depth using BFS
+        depths = {}
+        visited = {self.start}
+        queue = deque([(self.start, 0)])
 
-        # Add directed edges (arrows)
+        while queue:
+            curr_node, current_depth = queue.popleft()
+            
+            if curr_node not in (self.start, self.end):
+                depths[curr_node] = current_depth
+                
+            neighbors = [v for u, v in self.edges if u == curr_node]
+            for neighbor in neighbors:
+                if neighbor not in visited:
+                    visited.add(neighbor)
+                    queue.append((neighbor, current_depth + 1))
+
+        # 2. Group nodes by depth
+        depth_groups = {}
+        for node, depth in depths.items():
+            depth_groups.setdefault(depth, []).append(node)
+
+        # 3. Add START and END at the extremes
+        with dot.subgraph() as s:
+            s.attr(rank='source')
+            s.node(self.start.id, self.start.id, shape='ellipse', style='filled', fillcolor='lightgray')
+            
+        with dot.subgraph() as s:
+            s.attr(rank='sink')
+            s.node(self.end.id, self.end.id, shape='ellipse', style='filled', fillcolor='lightgray')
+
+        # 4. Add functional nodes grouped by depth for vertical alignment
+        for depth, nodes in depth_groups.items():
+            with dot.subgraph() as s:
+                s.attr(rank='same')
+                for node in nodes:
+                    color = 'lightblue' if node.is_up else 'salmon'
+                    s.node(node.id, node.id, shape='box', style='filled', fillcolor=color)
+
+        # 5. Add directed edges (Without color labels for standard RBDs)
         for u, v in self.edges:
             dot.edge(u.id, v.id)
 
-        # Render the graph to a file and optionally open it
+        # 6. Render the graph
         try:
             dot.render(filename, format='png', view=view, cleanup=True)
         except Exception as e:
-            print(f"Error rendering graph. Ensure Graphviz binaries are installed on your OS. Details: {e}")
+            print(f"Error rendering graph. Details: {e}")
 
 
 # MINITEST
@@ -304,7 +332,7 @@ def create_atomic_block(name: str) -> RBD:
     
     return RBD(nodes, edges, start, end)
 
-""" if __name__ == "__main__":
+if __name__ == "__main__":
     # 1. Instanciamos los bloques básicos
     pump_a = create_atomic_block("Bomba_A")
     pump_b = create_atomic_block("Bomba_B")
@@ -318,5 +346,5 @@ def create_atomic_block(name: str) -> RBD:
 
     print(system)
 
-    system.draw(filename="my_sistem_rbd", view=True)
- """
+    system.draw(filename="my_system_rbd", view=True)
+
