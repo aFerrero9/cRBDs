@@ -42,8 +42,6 @@ class RBD:
             raise ValueError("Invalid RBD: The graph contains cycles.")
         if not self._check_connectivity():
             raise ValueError("Invalid RBD: Functional nodes are structurally isolated.")
-        if self.start.is_functional or self.end.is_functional:
-            raise ValueError("Invalid RBD: START or END are marked as functional nodes")
 
     def _is_dag(self):
         """Verifies that the graph has no cycles using DFS."""
