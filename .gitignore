@@ -1,6 +1,3 @@
-# ==========================================
-# 1. Archivos generados por tu proyecto (RBD)
-# ==========================================
 # Ignorar las imágenes generadas por Graphviz para no llenar el repo
 *.png
 *.pdf
@@ -9,9 +6,8 @@
 rbd_diagram*
 mi_sistema_rbd*
 
-# ==========================================
-# 2. Entorno de Python
-# ==========================================
+# Ignorar .txt
+*.txt
 # Caché de archivos compilados
 __pycache__/
 *.py[cod]
@@ -31,15 +27,9 @@ env.bak/
 htmlcov/
 .pytest_cache/
 
-# ==========================================
-# 3. Editores de Código (VS Code)
-# ==========================================
 .vscode/
 *.code-workspace
 
-# ==========================================
-# 4. Sistema Operativo (Mac / Linux)
-# ==========================================
 .DS_Store
 .DS_Store?
 ._*
