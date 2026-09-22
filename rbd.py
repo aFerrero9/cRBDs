@@ -43,7 +43,9 @@ class RBD:
         if not self._check_connectivity():
             raise ValueError("Invalid RBD: Functional nodes are structurally isolated.")
         if len(self.functional_nodes) < 1:
-            raise ValueError("There must be at least 1 functional component.")
+            raise ValueError("There must be at least one functional component.")
+        if self.nodes - self.functional_nodes != {self.start, self.end}:
+            raise ValueError("The system must contain exactly two non-functional nodes: START and END.")
 
     def _is_dag(self):
         """Verifies that the graph has no cycles using DFS."""

@@ -223,7 +223,7 @@ if __name__ == "__main__":
     end_a = Node("END", is_functional=False)
     
     nodes_a = {start_a, laser_a_1, laser_b_1, end_a}
-    edges_a = {(start_a, laser_a_1), (laser_a_1, laser_b_1), (laser_b_1, end_a)}
+    edges_a = {(start_a, laser_a_1), (laser_a_1, laser_b_1), (laser_a_1, end_a), (laser_b_1, end_a)}
     
     colors_a = {"red"}
     coloring_a = {e: {"red"} for e in edges_a}
@@ -237,7 +237,7 @@ if __name__ == "__main__":
     end_b = Node("END", is_functional=False)
     
     nodes_b = {start_b, laser_b_2, laser_a_2, end_b}
-    edges_b = {(start_b, laser_b_2), (laser_b_2, laser_a_2), (laser_a_2, end_b)}
+    edges_b = {(start_b, laser_b_2), (laser_b_2, laser_a_2), (laser_b_2, end_b), (laser_a_2, end_b)}
     
     colors_b = {"blue"}
     coloring_b = {e: {"blue"} for e in edges_b}
