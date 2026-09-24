@@ -215,8 +215,9 @@ class CRBD(RBD):
 
 
 # MINITEST: two satellites mini version
-if __name__ == "__main__":
-    # 1. Manually instantiate Satellite A: START -> LaserA -> LaserB -> END (Red)
+""" if __name__ == "__main__":
+    # Parallel example
+   
     start_a = Node("START", is_functional=False)
     laser_a_1 = Node("LaserA", is_functional=True, is_up=True)
     laser_b_1 = Node("LaserB", is_functional=True, is_up=True)
@@ -230,7 +231,6 @@ if __name__ == "__main__":
     
     satellite_a = CRBD(nodes_a, edges_a, start_a, end_a, colors_a, coloring_a)
 
-    # 2. Manually instantiate Satellite B: START -> LaserB -> LaserA -> END (Blue)
     start_b = Node("START", is_functional=False)
     laser_b_2 = Node("LaserB", is_functional=True, is_up=True)
     laser_a_2 = Node("LaserA", is_functional=True, is_up=True)
@@ -246,9 +246,49 @@ if __name__ == "__main__":
 
     system = satellite_a // satellite_b
 
-    # 4. Print the resulting topology
+    
     print("\nGlobal System Architecture:")
     print(system)
 
-    # 6. Draw the graph with Graphviz
+    
     system.draw(filename="my_system_crbd", view=True)
+ """
+
+""" if __name__ == "__main__":
+    # Series example
+    
+    start_a = Node("START", is_functional=False)
+    laser_a_1 = Node("LaserA", is_functional=True, is_up=True)
+    laser_b_1 = Node("LaserB", is_functional=True, is_up=True)
+    end_a = Node("END", is_functional=False)
+    
+    nodes_a = {start_a, laser_a_1, laser_b_1, end_a}
+    edges_a = {(start_a, laser_a_1), (laser_a_1, laser_b_1), (laser_a_1, end_a), (laser_b_1, end_a)}
+    
+    colors_a = {"red"}
+    coloring_a = {e: {"red"} for e in edges_a}
+    
+    satellite_a = CRBD(nodes_a, edges_a, start_a, end_a, colors_a, coloring_a)
+
+    start_b = Node("START", is_functional=False)
+    laser_b_2 = Node("LaserC", is_functional=True, is_up=True)
+    laser_a_2 = Node("LaserD", is_functional=True, is_up=True)
+    end_b = Node("END", is_functional=False)
+    
+    nodes_b = {start_b, laser_b_2, laser_a_2, end_b}
+    edges_b = {(start_b, laser_b_2), (laser_b_2, laser_a_2), (laser_b_2, end_b), (laser_a_2, end_b)}
+    
+    colors_b = {"blue"}
+    coloring_b = {e: {"blue"} for e in edges_b}
+    
+    satellite_b = CRBD(nodes_b, edges_b, start_b, end_b, colors_b, coloring_b)
+
+    system = satellite_a >> satellite_b
+
+  
+    print("\nGlobal System Architecture:")
+    print(system)
+
+    
+    system.draw(filename="my_system_crbd", view=True)
+ """
