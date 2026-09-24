@@ -117,20 +117,20 @@ class CRBD(RBD):
         lines = base_repr.split("\n")
         
         lines[0] = lines[0].replace("RBD(", "CRBD(", 1)
-        # Le insertamos la cantidad de colores justo antes del paréntesis de cierre
+        # Insert the number of colors right before the closing parenthesis
         lines[0] = lines[0].replace(")", f", Colors: {len(self.colors)})")
         
-        # 4. Agregamos un salto de línea y el título para la función de coloreo
+        # Add a newline and the title for the coloring function
         lines.append("\nEdge Coloring Mapping:")
         
-        # 5. Ordenamos las aristas alfabéticamente para que la lectura sea determinista y prolija
+        # Sort edges alphabetically for deterministic and clean reading
         sorted_edges = sorted(self.coloring.keys(), key=lambda e: (e[0].id, e[1].id))
         
         for u, v in sorted_edges:
-            # Agregamos cada arista con sus colores asociados
+            # Add each edge with its associated colors
             lines.append(f"  {u.id} -> {v.id} : {self.coloring[(u, v)]}")
             
-        # 6. Volvemos a unir todas las líneas con saltos de línea (\n)
+        # Rejoin all lines with newlines (\n)
         return "\n".join(lines)
 
     def draw(self, filename="crbd_diagram", view=True):
@@ -151,10 +151,10 @@ class CRBD(RBD):
         dot.attr(rankdir='LR', ranksep='0.4', nodesep='0.4') 
         dot.attr('node', fontname='Helvetica', fontsize='12', margin='0.1')
         
-        # Se agregaron labelfontname y labelfontsize para controlar el tamaño de los taillabel/headlabel
+        # Added labelfontname and labelfontsize to control the size of taillabel/headlabel
         dot.attr('edge', fontname='Helvetica', fontsize='9', labelfontname='Helvetica', labelfontsize='9')
 
-        # 1. Calculate topological depth using BFS to find nodes on the same level
+        # Calculate topological depth using BFS to find nodes on the same level
         depths = {}
         visited = {self.start}
         queue = deque([(self.start, 0)])
@@ -171,12 +171,12 @@ class CRBD(RBD):
                     visited.add(neighbor)
                     queue.append((neighbor, current_depth + 1))
 
-        # 2. Group nodes by depth
+        # Group nodes by depth
         depth_groups = {}
         for node, depth in depths.items():
             depth_groups.setdefault(depth, []).append(node)
 
-        # 3. Add START and END explicitly at the absolute extremes
+        # Add START and END explicitly at the absolute extremes
         with dot.subgraph() as s:
             s.attr(rank='source')
             s.node(self.start.id, self.start.id, shape='ellipse', style='filled', fillcolor='lightgray')
@@ -185,7 +185,7 @@ class CRBD(RBD):
             s.attr(rank='sink')
             s.node(self.end.id, self.end.id, shape='ellipse', style='filled', fillcolor='lightgray')
 
-        # 4. Add functional nodes grouped by their depth to force vertical alignment
+        # Add functional nodes grouped by their depth to force vertical alignment
         for depth, nodes in depth_groups.items():
             with dot.subgraph() as s:
                 s.attr(rank='same')
@@ -193,26 +193,25 @@ class CRBD(RBD):
                     color = 'lightblue' if node.is_up else 'salmon'
                     s.node(node.id, node.id, shape='box', style='filled', fillcolor=color)
 
-        # 5. Add directed edges with dynamically positioned coloring labels
+        # Add directed edges with dynamically positioned coloring labels
         for u, v in self.edges:
             edge_colors = self.coloring.get((u, v), set())
             label_text = str(edge_colors) if edge_colors else ""
             
-            # Detección lógica de ciclos mutuos
+            # Logical detection of mutual cycles
             if (v, u) in self.edges:
-                # Empuja la etiqueta hacia el nodo de origen (u).
-                # labeldistance aleja la etiqueta ligeramente del nodo para que no lo pise.
+                # Push the label towards the source node (u).
+                # labeldistance moves the label slightly away from the node so it doesn't overlap.
                 dot.edge(u.id, v.id, taillabel=label_text, labeldistance='2.5', minlen='2')
             else:
-                # Comportamiento normal para aristas sin ciclo (etiqueta al centro)
+                # Normal behavior for edges without cycles (centered label)
                 dot.edge(u.id, v.id, label=label_text, minlen='2')
 
-        # 6. Render the graph
+        # Render the graph
         try:
             dot.render(filename, format='png', view=view, cleanup=True)
         except Exception as e:
             print(f"Error rendering graph. Details: {e}")
-
 
 # MINITEST: two satellites mini version
 """ if __name__ == "__main__":

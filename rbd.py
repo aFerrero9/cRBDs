@@ -271,7 +271,7 @@ class RBD:
         dot.attr(rankdir='LR') 
         dot.attr('node', fontname='Helvetica', fontsize='12', margin='0.1')
 
-        # 1. Calculate topological depth using BFS
+        # Calculate topological depth using BFS
         depths = {}
         visited = {self.start}
         queue = deque([(self.start, 0)])
@@ -288,12 +288,12 @@ class RBD:
                     visited.add(neighbor)
                     queue.append((neighbor, current_depth + 1))
 
-        # 2. Group nodes by depth
+        # Group nodes by depth
         depth_groups = {}
         for node, depth in depths.items():
             depth_groups.setdefault(depth, []).append(node)
 
-        # 3. Add START and END at the extremes
+        # Add START and END at the extremes
         with dot.subgraph() as s:
             s.attr(rank='source')
             s.node(self.start.id, self.start.id, shape='ellipse', style='filled', fillcolor='lightgray')
@@ -302,7 +302,7 @@ class RBD:
             s.attr(rank='sink')
             s.node(self.end.id, self.end.id, shape='ellipse', style='filled', fillcolor='lightgray')
 
-        # 4. Add functional nodes grouped by depth for vertical alignment
+        # Add functional nodes grouped by depth for vertical alignment
         for depth, nodes in depth_groups.items():
             with dot.subgraph() as s:
                 s.attr(rank='same')
@@ -310,15 +310,32 @@ class RBD:
                     color = 'lightblue' if node.is_up else 'salmon'
                     s.node(node.id, node.id, shape='box', style='filled', fillcolor=color)
 
-        # 5. Add directed edges (Without color labels for standard RBDs)
+        # Add directed edges (Without color labels for standard RBDs)
         for u, v in self.edges:
             dot.edge(u.id, v.id)
 
-        # 6. Render the graph
+        # Render the graph
         try:
             dot.render(filename, format='png', view=view, cleanup=True)
         except Exception as e:
             print(f"Error rendering graph. Details: {e}")
+
+    # RBD to logic formulae logic:
+    @staticmethod
+    def _decomposition_lemma(adj_list: dict, init: Node) -> list:
+        visited = set()
+        stack = [init]
+        current_path = []
+        # TODO
+        while stack:
+            node = stack.pop()
+            if node not in visited:
+                visited.add(node)
+                for neighbor in adj_list[node]:
+                    if neighbor not in visited:
+                        stack.append(neighbor)
+        return visited
+
 
 
 # MINITEST
@@ -335,13 +352,12 @@ def create_atomic_block(name: str) -> RBD:
     return RBD(nodes, edges, start, end)
 
 if __name__ == "__main__":
-    # 1. Instanciamos los bloques básicos
+
     pump_a = create_atomic_block("Bomba_A")
     pump_b = create_atomic_block("Bomba_B")
     valve = create_atomic_block("Valvula_Principal")
     sensor = create_atomic_block("Sensor_Presion")
 
-    # 2. Componemos el sistema usando tu álgebra de operadores
     # (Bomba A // Bomba B) >> Valvula >> Sensor
     pumps_subsystem = pump_a // pump_b
     system = pumps_subsystem >> valve >> sensor
