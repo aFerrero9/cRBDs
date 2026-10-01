@@ -320,21 +320,44 @@ class RBD:
         except Exception as e:
             print(f"Error rendering graph. Details: {e}")
 
-    # RBD to logic formulae logic:
+    # RBD to logic formula logic:
     @staticmethod
-    def _decomposition_lemma(adj_list: dict, init: Node) -> list:
-        visited = set()
-        stack = [init]
-        current_path = []
-        # TODO
-        while stack:
-            node = stack.pop()
-            if node not in visited:
-                visited.add(node)
-                for neighbor in adj_list[node]:
-                    if neighbor not in visited:
-                        stack.append(neighbor)
-        return visited
+    def _decomposition_lemma(adj_list: dict, init: Node, dst: Node, 
+                             previous_path: list = None, all_paths: list = None) -> list:
+        """ Extracts every path from a DAG between init and dst using DFS.
+        Returns a list containing all paths (lists of nodes). """
+        # Protect against mutable default arguments
+        if previous_path is None:
+            previous_path = []
+        if all_paths is None:
+            all_paths = []
+
+        # Create copy of the path for this specific branch
+        current_path = previous_path + [init]
+
+        # Base case: we reached dst
+        if init == dst:
+            all_paths.append(current_path)
+        else:
+            # Recursive case
+            for neighbor in adj_list[init]:
+                RBD._decomposition_lemma(adj_list, neighbor, dst, current_path, all_paths)
+
+        return all_paths
+
+    def to_logic_formula(self):
+        """ Returns a logic formula phi representing the following:
+        phi = true if the system fails (no path from start to end) """
+        # Build adjacency list
+        graph = {n: [] for n in system.nodes}
+        for u, v in system.edges:
+            graph[u].append(v)
+
+        all_paths = RBD._decomposition_lemma(graph, self.start, self.end)
+        just_ids = [[n.id for n in path] for path in all_paths]
+
+        
+
 
 
 

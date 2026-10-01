@@ -47,5 +47,15 @@ def main():
         print(f"\nPARSER ERROR: {e}")
         sys.exit(1)
 
+    if type(system) == RBD:
+        print("Paths of the graph:")
+        graph = {n: [] for n in system.nodes}
+        for u, v in system.edges:
+            graph[u].append(v)
+
+        all_paths = RBD._decomposition_lemma(graph, system.start, system.end)
+        just_id = [[n.id for n in path] for path in all_paths]
+        print(just_id)
+
 if __name__ == "__main__":
     main()
