@@ -1,4 +1,35 @@
 """ 
+File Format Conventions
+=======================
+The parser reads a plain text file containing exactly three mandatory sections.
+Empty lines and lines starting with '#' (comments) are safely ignored.
+
+@SYSTEM
+-------
+Defines the graph behavior. Must contain exactly one type declaration.
+    TYPE = RBD
+    TYPE = CRBD
+
+@NODES
+------
+Declares all nodes in the topology. 
+Format: node_id, [functional_flag]
+    * Defaults: Nodes are functional by default.
+    * Non-functional: Append a flag like 'nf', 'false', '0', or 'n' (e.g., `START, nf`).
+    * Structural Nodes: The graph strictly requires a START and END node. 
+      You may use aliases (e.g., 's', 'inicio', 'e', 'final') ONLY IF accompanied 
+      by a non-functional flag (e.g., `s, nf` parses as START). Functional nodes 
+      named 's' or 'e' are treated as standard internal nodes.
+
+@TOPOLOGY
+---------
+Defines directed edges and colors. All nodes MUST be previously declared in @NODES.
+    * RBD Format:  u -> v
+    * cRBD Format: u -> v : color_1, color_2
+    * Tuple Colors (cRBD): To define a tuple as a single color entity, enclose 
+      it in parentheses. (e.g., `A -> B : red, (blue, green)` parses as 
+      two distinct colors).
+
 RBD format example:
 @SYSTEM
 TYPE = RBD
@@ -20,7 +51,6 @@ TYPE = CRBD
 
 @TOPOLOGY
 # u -> v : color_1, color_2, ...
-
 """
 from rbd import Node, RBD
 from crbd import CRBD
@@ -105,27 +135,42 @@ class RBDParser:
                             flag = parts[1].lower()
                             if flag in ('nf', 'false', 'notf', 'nonf', '0', 'n'):
                                 is_functional = False
+                                if node_id.lower() in ('start', 's', 'inicio', 'source'):
+                                    node_id = "START"
+                                if node_id.lower() in ('end', 'e', 'final', 'sink'):
+                                    node_id = "END"
                             elif flag in ('f', 'true', 'fun', '1', 'fn'):
                                 is_functional = True
-                        
+                            
                         # Create the node as declared
                         nodes_dict[node_id] = Node(node_id, is_functional=is_functional, is_up=True)
                             
                     # @TOPOLOGY
                     elif current_section == '@TOPOLOGY':
-                        # Split by ':' to separate edge from colors
                         if ':' in line:
                             edge_part, colors_part = line.split(':', 1)
                         else:
                             edge_part, colors_part = line, ""
                             
-                        # Parse edge u -> v
                         if '->' not in edge_part:
                             raise SyntaxError("Missing '->' operator in edge definition.")
                             
                         u_str, v_str = [p.strip() for p in edge_part.split('->')]
                         
-                        # Strict validation: All nodes must be declared in @NODES
+                        # Check for different start/end names
+                        if u_str not in nodes_dict:
+                            if u_str.lower() in ('start', 's', 'inicio', 'source') and "START" in nodes_dict:
+                                u_str = "START"
+                            elif u_str.lower() in ('end', 'e', 'final', 'sink') and "END" in nodes_dict:
+                                u_str = "END"
+
+                        if v_str not in nodes_dict:
+                            if v_str.lower() in ('start', 's', 'inicio', 'source') and "START" in nodes_dict:
+                                v_str = "START"
+                            elif v_str.lower() in ('end', 'e', 'final', 'sink') and "END" in nodes_dict:
+                                v_str = "END"
+                        
+                        # Validaciones estrictas después de resolver los nombres
                         if u_str not in nodes_dict:
                             raise ValueError(f"Node '{u_str}' is used in @TOPOLOGY but was not declared in @NODES.")
                         if v_str not in nodes_dict:
@@ -136,7 +181,6 @@ class RBDParser:
                         edge = (u, v)
                         edges.add(edge)
                         
-                        # Parse colors only if it's a cRBD and colors are provided
                         if system_type.lower() == 'crbd' and colors_part:
                             edge_colors = RBDParser._parse_colors(colors_part)
                             colors_set.update(edge_colors)

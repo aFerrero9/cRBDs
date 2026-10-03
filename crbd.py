@@ -136,45 +136,20 @@ class CRBD(RBD):
     def draw(self, filename="crbd_diagram", view=True):
         """
         Generates and displays a visual representation of the cRBD using Graphviz.
-        Forces parallel nodes to align vertically by calculating their topological depth.
-        Dynamically shifts edge labels to avoid overlaps in mutual cycles.
+        Delegates ranking and topological sorting to Graphviz's native Sugiyama 
+        algorithm for a much cleaner and readable layout.
         """
         try:
             import graphviz
-            from collections import deque
         except ImportError:
             raise ImportError("The 'graphviz' package is required. Run: pip install graphviz")
 
         dot = graphviz.Digraph(comment='Colored Reliability Block Diagram')
         
         # Global spacing adjustments
-        dot.attr(rankdir='LR', ranksep='0.4', nodesep='0.4') 
+        dot.attr(rankdir='LR', ranksep='0.6', nodesep='0.5', splines='true') 
         dot.attr('node', fontname='Helvetica', fontsize='12', margin='0.1')
-        
-        # Added labelfontname and labelfontsize to control the size of taillabel/headlabel
         dot.attr('edge', fontname='Helvetica', fontsize='9', labelfontname='Helvetica', labelfontsize='9')
-
-        # Calculate topological depth using BFS to find nodes on the same level
-        depths = {}
-        visited = {self.start}
-        queue = deque([(self.start, 0)])
-
-        while queue:
-            curr_node, current_depth = queue.popleft()
-            
-            if curr_node not in (self.start, self.end):
-                depths[curr_node] = current_depth
-                
-            neighbors = [v for u, v in self.edges if u == curr_node]
-            for neighbor in neighbors:
-                if neighbor not in visited:
-                    visited.add(neighbor)
-                    queue.append((neighbor, current_depth + 1))
-
-        # Group nodes by depth
-        depth_groups = {}
-        for node, depth in depths.items():
-            depth_groups.setdefault(depth, []).append(node)
 
         # Add START and END explicitly at the absolute extremes
         with dot.subgraph() as s:
@@ -185,15 +160,13 @@ class CRBD(RBD):
             s.attr(rank='sink')
             s.node(self.end.id, self.end.id, shape='ellipse', style='filled', fillcolor='lightgray')
 
-        # Add functional nodes grouped by their depth to force vertical alignment
-        for depth, nodes in depth_groups.items():
-            with dot.subgraph() as s:
-                s.attr(rank='same')
-                for node in nodes:
-                    color = 'lightblue' if node.is_up else 'salmon'
-                    s.node(node.id, node.id, shape='box', style='filled', fillcolor=color)
+        # Add all other functional nodes (Graphviz calculates optimal depths automatically)
+        for node in self.nodes:
+            if node not in (self.start, self.end):
+                color = 'lightblue' if node.is_up else 'salmon'
+                dot.node(node.id, node.id, shape='box', style='filled', fillcolor=color)
 
-        # Add directed edges with dynamically positioned coloring labels
+        # Add directed edges keeping your exact label logic and mutual cycle detection
         for u, v in self.edges:
             edge_colors = self.coloring.get((u, v), set())
             label_text = str(edge_colors) if edge_colors else ""
@@ -209,9 +182,10 @@ class CRBD(RBD):
 
         # Render the graph
         try:
-            dot.render(filename, format='png', view=view, cleanup=True)
+            dot.render(filename, format='pdf', view=view, cleanup=True)
         except Exception as e:
             print(f"Error rendering graph. Details: {e}")
+
 
 # MINITEST: two satellites mini version
 """ if __name__ == "__main__":
@@ -291,3 +265,84 @@ class CRBD(RBD):
     
     system.draw(filename="my_system_crbd", view=True)
  """
+
+
+""" def draw(self, filename="crbd_diagram", view=True):
+        
+        Generates and displays a visual representation of the cRBD using Graphviz.
+        Forces parallel nodes to align vertically by calculating their topological depth.
+        Dynamically shifts edge labels to avoid overlaps in mutual cycles.
+       
+        try:
+            import graphviz
+            from collections import deque
+        except ImportError:
+            raise ImportError("The 'graphviz' package is required. Run: pip install graphviz")
+
+        dot = graphviz.Digraph(comment='Colored Reliability Block Diagram')
+        
+        # Global spacing adjustments
+        dot.attr(rankdir='LR', ranksep='0.4', nodesep='0.4') 
+        dot.attr('node', fontname='Helvetica', fontsize='12', margin='0.1')
+        
+        # Added labelfontname and labelfontsize to control the size of taillabel/headlabel
+        dot.attr('edge', fontname='Helvetica', fontsize='9', labelfontname='Helvetica', labelfontsize='9')
+
+        # Calculate topological depth using BFS to find nodes on the same level
+        depths = {}
+        visited = {self.start}
+        queue = deque([(self.start, 0)])
+
+        while queue:
+            curr_node, current_depth = queue.popleft()
+            
+            if curr_node not in (self.start, self.end):
+                depths[curr_node] = current_depth
+                
+            neighbors = [v for u, v in self.edges if u == curr_node]
+            for neighbor in neighbors:
+                if neighbor not in visited:
+                    visited.add(neighbor)
+                    queue.append((neighbor, current_depth + 1))
+
+        # Group nodes by depth
+        depth_groups = {}
+        for node, depth in depths.items():
+            depth_groups.setdefault(depth, []).append(node)
+
+        # Add START and END explicitly at the absolute extremes
+        with dot.subgraph() as s:
+            s.attr(rank='source')
+            s.node(self.start.id, self.start.id, shape='ellipse', style='filled', fillcolor='lightgray')
+            
+        with dot.subgraph() as s:
+            s.attr(rank='sink')
+            s.node(self.end.id, self.end.id, shape='ellipse', style='filled', fillcolor='lightgray')
+
+        # Add functional nodes grouped by their depth to force vertical alignment
+        for depth, nodes in depth_groups.items():
+            with dot.subgraph() as s:
+                s.attr(rank='same')
+                for node in nodes:
+                    color = 'lightblue' if node.is_up else 'salmon'
+                    s.node(node.id, node.id, shape='box', style='filled', fillcolor=color)
+
+        # Add directed edges with dynamically positioned coloring labels
+        for u, v in self.edges:
+            edge_colors = self.coloring.get((u, v), set())
+            label_text = str(edge_colors) if edge_colors else ""
+            
+            # Logical detection of mutual cycles
+            if (v, u) in self.edges:
+                # Push the label towards the source node (u).
+                # labeldistance moves the label slightly away from the node so it doesn't overlap.
+                dot.edge(u.id, v.id, taillabel=label_text, labeldistance='2.5', minlen='2')
+            else:
+                # Normal behavior for edges without cycles (centered label)
+                dot.edge(u.id, v.id, label=label_text, minlen='2')
+
+        # Render the graph
+        try:
+            dot.render(filename, format='png', view=view, cleanup=True)
+        except Exception as e:
+            print(f"Error rendering graph. Details: {e}") """

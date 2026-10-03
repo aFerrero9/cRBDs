@@ -259,41 +259,21 @@ class RBD:
     def draw(self, filename="rbd_diagram", view=True):
         """
         Generates and displays a visual representation of the RBD using Graphviz.
-        Forces parallel nodes to align vertically by calculating their topological depth.
+        Delegates ranking and topological sorting to Graphviz's native Sugiyama 
+        algorithm for a much cleaner and readable layout.
         """
         try:
             import graphviz
-            from collections import deque
         except ImportError:
             raise ImportError("The 'graphviz' package is required. Run: pip install graphviz")
 
         dot = graphviz.Digraph(comment='Reliability Block Diagram')
-        dot.attr(rankdir='LR') 
+        
+        # Global spacing adjustments
+        dot.attr(rankdir='LR', ranksep='0.6', nodesep='0.5', splines='true') 
         dot.attr('node', fontname='Helvetica', fontsize='12', margin='0.1')
 
-        # Calculate topological depth using BFS
-        depths = {}
-        visited = {self.start}
-        queue = deque([(self.start, 0)])
-
-        while queue:
-            curr_node, current_depth = queue.popleft()
-            
-            if curr_node not in (self.start, self.end):
-                depths[curr_node] = current_depth
-                
-            neighbors = [v for u, v in self.edges if u == curr_node]
-            for neighbor in neighbors:
-                if neighbor not in visited:
-                    visited.add(neighbor)
-                    queue.append((neighbor, current_depth + 1))
-
-        # Group nodes by depth
-        depth_groups = {}
-        for node, depth in depths.items():
-            depth_groups.setdefault(depth, []).append(node)
-
-        # Add START and END at the extremes
+        # Add START and END explicitly at the absolute extremes
         with dot.subgraph() as s:
             s.attr(rank='source')
             s.node(self.start.id, self.start.id, shape='ellipse', style='filled', fillcolor='lightgray')
@@ -302,21 +282,20 @@ class RBD:
             s.attr(rank='sink')
             s.node(self.end.id, self.end.id, shape='ellipse', style='filled', fillcolor='lightgray')
 
-        # Add functional nodes grouped by depth for vertical alignment
-        for depth, nodes in depth_groups.items():
-            with dot.subgraph() as s:
-                s.attr(rank='same')
-                for node in nodes:
-                    color = 'lightblue' if node.is_up else 'salmon'
-                    s.node(node.id, node.id, shape='box', style='filled', fillcolor=color)
+        # Add all other functional nodes (Graphviz calculates optimal depths automatically)
+        for node in self.nodes:
+            if node not in (self.start, self.end):
+                color = 'lightblue' if node.is_up else 'salmon'
+                dot.node(node.id, node.id, shape='box', style='filled', fillcolor=color)
 
         # Add directed edges (Without color labels for standard RBDs)
         for u, v in self.edges:
-            dot.edge(u.id, v.id)
+            # minlen='2' ensures the spacing between nodes matches the CRBD visual exactly
+            dot.edge(u.id, v.id, minlen='2')
 
         # Render the graph
         try:
-            dot.render(filename, format='png', view=view, cleanup=True)
+            dot.render(filename, format='pdf', view=view, cleanup=True)
         except Exception as e:
             print(f"Error rendering graph. Details: {e}")
 
