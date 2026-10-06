@@ -53,7 +53,7 @@ def main():
         for u, v in system.edges:
             graph[u].append(v)
 
-        all_paths = RBD._decomposition_lemma(graph, system.start, system.end)
+        all_paths = system._decomposition_lemma(graph, system.start, system.end)
         just_id = [[n.id for n in path] for path in all_paths]
         print(just_id)
 

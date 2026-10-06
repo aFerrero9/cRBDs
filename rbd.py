@@ -300,8 +300,7 @@ class RBD:
             print(f"Error rendering graph. Details: {e}")
 
     # RBD to logic formula logic:
-    @staticmethod
-    def _decomposition_lemma(adj_list: dict, init: Node, dst: Node, 
+    def _decomposition_lemma(self, adj_list: dict, init: Node, dst: Node, 
                              previous_path: list = None, all_paths: list = None) -> list:
         """ Extracts every path from a DAG between init and dst using DFS.
         Returns a list containing all paths (lists of nodes). """
@@ -320,7 +319,8 @@ class RBD:
         else:
             # Recursive case
             for neighbor in adj_list[init]:
-                RBD._decomposition_lemma(adj_list, neighbor, dst, current_path, all_paths)
+                # We use RBD._decomposition_lemma to avoid issues with CRBD subclassing. 
+                RBD._decomposition_lemma(self, adj_list, neighbor, dst, current_path, all_paths)
 
         return all_paths
 
@@ -328,15 +328,14 @@ class RBD:
         """ Returns a logic formula phi representing the following:
         phi = true if the system fails (no path from start to end) """
         # Build adjacency list
-        graph = {n: [] for n in system.nodes}
-        for u, v in system.edges:
+        graph = {n: [] for n in self.nodes}
+        for u, v in self.edges:
             graph[u].append(v)
 
-        all_paths = RBD._decomposition_lemma(graph, self.start, self.end)
+        all_paths = self._decomposition_lemma(graph, self.start, self.end)
         just_ids = [[n.id for n in path] for path in all_paths]
 
         
-
 
 
 
