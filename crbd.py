@@ -186,6 +186,15 @@ class CRBD(RBD):
         except Exception as e:
             print(f"Error rendering graph. Details: {e}")
 
+    def _decomposition_lemma(self, adj_list: dict, init: Node, dst: Node, 
+                             previous_path: list = None, all_paths: list = None) -> list:
+        """ Extracts every path from a DAG between init and dst using DFS.
+        Returns a list containing all paths (lists of nodes). """
+        if self._is_dag():
+            return super()._decomposition_lemma(adj_list, init, dst, previous_path, all_paths)
+        else:
+            raise ValueError("Decomposition lemma only works for DAGs.")
+
 
 # MINITEST: two satellites mini version
 """ if __name__ == "__main__":
