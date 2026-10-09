@@ -10,3 +10,4 @@ if __name__ == "__main__":
 
     print(parallel)
     parallel.draw()
+    parallel.to_logic_formula(t=100, filename="satellites_parallel.wcnf")

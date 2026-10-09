@@ -236,85 +236,6 @@ class RBD:
 
         return RBD(new_nodes, new_edges, new_start, new_end)
 
-    def __repr__(self):
-        """String representation of the RBD topology (Adjacency List in BFS order)."""
-        header = f"RBD(Functional Nodes: {len(self.functional_nodes)}, Total Edges: {len(self.edges)})"
-        
-        # Build an adjacency dictionary using node IDs
-        adj_list = {n.id: [] for n in self.nodes}
-        for u, v in self.edges:
-            adj_list[u.id].append(v.id)
-            
-        lines = [header, "Topology:"]
-        
-        # BFS traversal to determine a natural printing order
-        visited = {self.start.id}
-        queue = deque([self.start.id])
-        bfs_order = []
-        
-        while queue:
-            current_id = queue.popleft()
-            bfs_order.append(current_id)
-            
-            # Sort neighbors alphabetically for deterministic queuing of siblings
-            neighbors = sorted(adj_list[current_id])
-            for neighbor in neighbors:
-                if neighbor not in visited:
-                    visited.add(neighbor)
-                    queue.append(neighbor)
-                    
-        # Create output lines following the BFS logical order
-        for node_id in bfs_order:
-            targets = adj_list[node_id]
-            if targets:
-                targets_str = ", ".join(sorted(targets))
-                lines.append(f"  {node_id} -> [{targets_str}]")
-                
-        return "\n".join(lines)
-
-    def draw(self, filename="rbd_diagram", view=True):
-        """
-        Generates and displays a visual representation of the RBD using Graphviz.
-        Delegates ranking and topological sorting to Graphviz's native Sugiyama 
-        algorithm for a much cleaner and readable layout.
-        """
-        try:
-            import graphviz
-        except ImportError:
-            raise ImportError("The 'graphviz' package is required. Run: pip install graphviz")
-
-        dot = graphviz.Digraph(comment='Reliability Block Diagram')
-        
-        # Global spacing adjustments
-        dot.attr(rankdir='LR', ranksep='0.6', nodesep='0.5', splines='true') 
-        dot.attr('node', fontname='Helvetica', fontsize='12', margin='0.1')
-
-        # Add START and END explicitly at the absolute extremes
-        with dot.subgraph() as s:
-            s.attr(rank='source')
-            s.node(self.start.id, self.start.id, shape='ellipse', style='filled', fillcolor='lightgray')
-            
-        with dot.subgraph() as s:
-            s.attr(rank='sink')
-            s.node(self.end.id, self.end.id, shape='ellipse', style='filled', fillcolor='lightgray')
-
-        # Add all other functional nodes (Graphviz calculates optimal depths automatically)
-        for node in self.nodes:
-            if node not in (self.start, self.end):
-                color = 'lightblue' if node.is_up else 'salmon'
-                dot.node(node.id, node.id, shape='box', style='filled', fillcolor=color)
-
-        # Add directed edges (Without color labels for standard RBDs)
-        for u, v in self.edges:
-            # minlen='2' ensures the spacing between nodes matches the CRBD visual exactly
-            dot.edge(u.id, v.id, minlen='2')
-
-        # Render the graph
-        try:
-            dot.render(filename, format='pdf', view=view, cleanup=True)
-        except Exception as e:
-            print(f"Error rendering graph. Details: {e}")
-
     # RBD to logic formula logic:
     def _decomposition_lemma(self, adj_list: dict, init: Node, dst: Node, 
                              previous_path: list = None, all_paths: list = None) -> list:
@@ -409,7 +330,86 @@ class RBD:
             f.write(wcnf_content)
             
         print(f"File {filename} successfully generated")
-        return filename
+        return filename    
+
+    def __repr__(self):
+        """String representation of the RBD topology (Adjacency List in BFS order)."""
+        header = f"RBD(Functional Nodes: {len(self.functional_nodes)}, Total Edges: {len(self.edges)})"
+        
+        # Build an adjacency dictionary using node IDs
+        adj_list = {n.id: [] for n in self.nodes}
+        for u, v in self.edges:
+            adj_list[u.id].append(v.id)
+            
+        lines = [header, "Topology:"]
+        
+        # BFS traversal to determine a natural printing order
+        visited = {self.start.id}
+        queue = deque([self.start.id])
+        bfs_order = []
+        
+        while queue:
+            current_id = queue.popleft()
+            bfs_order.append(current_id)
+            
+            # Sort neighbors alphabetically for deterministic queuing of siblings
+            neighbors = sorted(adj_list[current_id])
+            for neighbor in neighbors:
+                if neighbor not in visited:
+                    visited.add(neighbor)
+                    queue.append(neighbor)
+                    
+        # Create output lines following the BFS logical order
+        for node_id in bfs_order:
+            targets = adj_list[node_id]
+            if targets:
+                targets_str = ", ".join(sorted(targets))
+                lines.append(f"  {node_id} -> [{targets_str}]")
+                
+        return "\n".join(lines)
+
+    def draw(self, filename="rbd_diagram", view=True):
+        """
+        Generates and displays a visual representation of the RBD using Graphviz.
+        Delegates ranking and topological sorting to Graphviz's native Sugiyama 
+        algorithm for a much cleaner and readable layout.
+        """
+        try:
+            import graphviz
+        except ImportError:
+            raise ImportError("The 'graphviz' package is required. Run: pip install graphviz")
+
+        dot = graphviz.Digraph(comment='Reliability Block Diagram')
+        
+        # Global spacing adjustments
+        dot.attr(rankdir='LR', ranksep='0.6', nodesep='0.5', splines='true') 
+        dot.attr('node', fontname='Helvetica', fontsize='12', margin='0.1')
+
+        # Add START and END explicitly at the absolute extremes
+        with dot.subgraph() as s:
+            s.attr(rank='source')
+            s.node(self.start.id, self.start.id, shape='ellipse', style='filled', fillcolor='lightgray')
+            
+        with dot.subgraph() as s:
+            s.attr(rank='sink')
+            s.node(self.end.id, self.end.id, shape='ellipse', style='filled', fillcolor='lightgray')
+
+        # Add all other functional nodes (Graphviz calculates optimal depths automatically)
+        for node in self.nodes:
+            if node not in (self.start, self.end):
+                color = 'lightblue' if node.is_up else 'salmon'
+                dot.node(node.id, node.id, shape='box', style='filled', fillcolor=color)
+
+        # Add directed edges (Without color labels for standard RBDs)
+        for u, v in self.edges:
+            # minlen='2' ensures the spacing between nodes matches the CRBD visual exactly
+            dot.edge(u.id, v.id, minlen='2')
+
+        # Render the graph
+        try:
+            dot.render(filename, format='pdf', view=view, cleanup=True)
+        except Exception as e:
+            print(f"Error rendering graph. Details: {e}")
         
 
 
