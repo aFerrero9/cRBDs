@@ -2,6 +2,7 @@ from collections import deque
 from itertools import product
 import copy
 import math
+import os
 
 # Nodes
 
@@ -320,17 +321,22 @@ class RBD:
                 if node in dimacs_mapping:
                     clause_literals.append(str(dimacs_mapping[node]))
             
-            # Each clause must end with a '0'
+            # Each clause must end with a 0
             if clause_literals:
                 clause_line = " ".join(clause_literals) + " 0"
                 lines.append(clause_line)
 
         wcnf_content = "\n".join(lines)
-        with open(filename, "w") as f:
+        
+        os.makedirs("wmc_files", exist_ok=True)
+        safe_filename = os.path.basename(filename)
+        filepath = os.path.join("wmc_files", safe_filename)
+        
+        with open(filepath, "w") as f:
             f.write(wcnf_content)
             
-        print(f"File {filename} successfully generated")
-        return filename    
+        print(f"File {filepath} successfully generated")
+        return filepath   
 
     def __repr__(self):
         """String representation of the RBD topology (Adjacency List in BFS order)."""
@@ -406,8 +412,12 @@ class RBD:
             dot.edge(u.id, v.id, minlen='2')
 
         # Render the graph
+        os.makedirs("diagrams", exist_ok=True)
+        safe_filename = os.path.basename(filename)
+        filepath = os.path.join("diagrams", safe_filename)
+
         try:
-            dot.render(filename, format='pdf', view=view, cleanup=True)
+            dot.render(filepath, format='pdf', view=view, cleanup=True)
         except Exception as e:
             print(f"Error rendering graph. Details: {e}")
         
@@ -427,7 +437,7 @@ def create_atomic_block(name: str, failure_rate: float) -> RBD:
     
     return RBD(nodes, edges, start, end)
 
-if __name__ == "__main__":
+""" if __name__ == "__main__":
 
     pump_a = create_atomic_block("Bomba_A", failure_rate=0.001)
     pump_b = create_atomic_block("Bomba_B", failure_rate=0.0003)
@@ -442,4 +452,4 @@ if __name__ == "__main__":
     #print(system)
 
     #system.draw(filename="my_system_rbd", view=True)
-
+ """

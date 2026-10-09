@@ -1,3 +1,5 @@
+import os
+
 from rbd import Node, RBD
 from itertools import product
 
@@ -200,11 +202,16 @@ class CRBD(RBD):
                 lines.append(clause_line)
 
         wcnf_content = "\n".join(lines)
-        with open(filename, "w") as f:
+        
+        os.makedirs("wmc_files", exist_ok=True)
+        safe_filename = os.path.basename(filename)
+        filepath = os.path.join("wmc_files", safe_filename)
+        
+        with open(filepath, "w") as f:
             f.write(wcnf_content)
             
-        print(f"File {filename} successfully generated")
-        return filename
+        print(f"File {filepath} successfully generated")
+        return filepath   
 
     def __repr__(self):
         """String representation of the cRBD topology and coloring function."""
@@ -277,8 +284,12 @@ class CRBD(RBD):
                 dot.edge(u.id, v.id, label=label_text, minlen='2')
 
         # Render the graph
+        os.makedirs("diagrams", exist_ok=True)
+        safe_filename = os.path.basename(filename)
+        filepath = os.path.join("diagrams", safe_filename)
+
         try:
-            dot.render(filename, format='pdf', view=view, cleanup=True)
+            dot.render(filepath, format='pdf', view=view, cleanup=True)
         except Exception as e:
             print(f"Error rendering graph. Details: {e}")
 

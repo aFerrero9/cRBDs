@@ -4,7 +4,7 @@ import sys
 import os
 from rbd import Node, RBD
 from crbd import CRBD
-from parser import RBDParser
+from parser import CRBDParser
 
 def main():
     # Set up the argument parser
@@ -27,7 +27,7 @@ def main():
     
     try:
         # Call your parser
-        system = RBDParser.parse_file(filepath)
+        system = CRBDParser.parse_file(filepath)
         
         # Dynamically check the returned type to print the correct structure
         system_type_name = type(system).__name__
@@ -43,11 +43,11 @@ def main():
         system.draw()
                 
     except Exception as e:
-        # Catch and cleanly display your strict validation errors
+        # Show validation errors
         print(f"\nPARSER ERROR: {e}")
         sys.exit(1)
 
-    if type(system) == RBD:
+    if RBD._is_dag(system):
         print("Paths of the graph:")
         graph = {n: [] for n in system.nodes}
         for u, v in system.edges:
@@ -57,7 +57,8 @@ def main():
         just_id = [[n.id for n in path] for path in all_paths]
         print(just_id)
 
-        system.to_logic_formula(t=100, filename="pumps_subsystem.wcnf")
+    file_name = filepath.split('/')[-1].split('.')[0]
+    system.to_logic_formula(t=100, filename=f"{file_name}.wcnf")
 
 
 if __name__ == "__main__":

@@ -57,7 +57,7 @@ TYPE = CRBD
 from rbd import Node, RBD
 from crbd import CRBD
 
-class RBDParser:
+class CRBDParser:
     """
     Parser for reading RBD and cRBD topologies from text files.
     """
@@ -194,7 +194,7 @@ class RBDParser:
                         edges.add(edge)
                         
                         if system_type.lower() == 'crbd' and colors_part:
-                            edge_colors = RBDParser._parse_colors(colors_part)
+                            edge_colors = CRBDParser._parse_colors(colors_part)
                             colors_set.update(edge_colors)
                             coloring[edge] = edge_colors
 
