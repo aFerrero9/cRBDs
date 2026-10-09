@@ -1,14 +1,17 @@
 from collections import deque
 from itertools import product
 import copy
+import math
 
 # Nodes
 
 class Node:
-    def __init__(self, id_name: str, is_functional: bool = True, is_up: bool = True):
+    def __init__(self, id_name: str, is_functional: bool = True, 
+                 is_up: bool = True, failure_rate: float = 0.0):
         self.id = id_name
         self.is_functional = is_functional
         self.is_up = is_up
+        self.failure_rate = failure_rate if is_functional else 0.0
 
     def __hash__(self):
         return hash(self.id)
@@ -18,9 +21,22 @@ class Node:
 
     def __repr__(self):
         type_str = "F" if self.is_functional else "NF"
-        state_str = f"is up={self.is_up}"
+        state_str = f"is up={self.is_up}, failure rate={self.failure_rate}"
         
         return f"Node({self.id}, {type_str}, {state_str})"
+
+    def get_wmc_weights(self, t: float) -> tuple:
+        """
+        Calculates the reliability weights for a given mission time t using Exponential Distribution.
+        Returns (weight_fail, weight_success)
+        """
+        # R(t) = P[X > t] = e^(-lambda * t) 
+        reliability = math.exp(-self.failure_rate * t)
+        
+        # F(t) = P[X <= t] = 1 - R(t)
+        unreliability = 1.0 - reliability 
+        
+        return (unreliability, reliability)
 
 # RBDs
 
@@ -324,26 +340,85 @@ class RBD:
 
         return all_paths
 
-    def to_logic_formula(self):
-        """ Returns a logic formula phi representing the following:
-        phi = true if the system fails (no path from start to end) """
-        # Build adjacency list
+    def to_logic_formula(self, t: float, filename: str = "model.wcnf") -> str:
+        """
+        Converts the RBD structure into a logic formula in DIMACS (WCNF) format,
+        ready to be evaluated by the GPMC solver.
+        Params: 
+            t: Mission time (hours, days, etc.) for reliability calculation.
+            filename: Output filename.
+        Returns: the generated filename.
+        """
+        # Extract all paths from start to end
         graph = {n: [] for n in self.nodes}
         for u, v in self.edges:
             graph[u].append(v)
 
         all_paths = self._decomposition_lemma(graph, self.start, self.end)
-        just_ids = [[n.id for n in path] for path in all_paths]
+        
+        # Map functional nodes to DIMACS variables (numbers > 0)
+        dimacs_mapping = {}
+        var_counter = 1
+        
+        # Sorted by node ID to ensure deterministic variable mapping in every run.
+        functional_nodes = sorted(self.functional_nodes, key=lambda n: n.id)
+        for node in functional_nodes:
+            dimacs_mapping[node] = var_counter
+            var_counter += 1
 
+        num_vars = len(self.functional_nodes)
+        num_clauses = len(all_paths)
+
+        # Build DIMACS file content
+        lines = []
+
+        # Add comments to retrieve the mapping to original node IDs
+        lines.append(f"c c DIMACS WCNF representation of RBD for mission time t={t}")
+        lines.append(f"c c Nodes mapping:")
+        for node, var_id in dimacs_mapping.items():
+            lines.append(f"c c {node.id} -> {var_id}")
+        
+        # DIMACS standard header
+        lines.append(f"p cnf {num_vars} {num_clauses}")
+        
+        # Declare weights for WMC (MCC2021 format)
+        for node in dimacs_mapping:
+            var_id = dimacs_mapping[node]
+            
+            weight_fail, weight_success = node.get_wmc_weights(t)
+            
+            # MCC2021 format: c p weight <literal> <weight> 0
+            lines.append(f"c p weight {var_id} {weight_fail:.9f} 0")     # Positive literal (node fails)
+            lines.append(f"c p weight -{var_id} {weight_success:.9f} 0") # Negative literal (node survives)
+
+        # Build the clauses
+        for path in all_paths:
+            clause_literals = []
+            for node in path:
+                # Only add functional nodes
+                if node in dimacs_mapping:
+                    clause_literals.append(str(dimacs_mapping[node]))
+            
+            # Each clause must end with a '0'
+            if clause_literals:
+                clause_line = " ".join(clause_literals) + " 0"
+                lines.append(clause_line)
+
+        wcnf_content = "\n".join(lines)
+        with open(filename, "w") as f:
+            f.write(wcnf_content)
+            
+        print(f"File {filename} successfully generated")
+        return filename
         
 
 
 
 # MINITEST
 
-def create_atomic_block(name: str) -> RBD:
+def create_atomic_block(name: str, failure_rate: float) -> RBD:
     """Helper function to quickly create a single-component RBD."""
-    comp = Node(name, is_functional=True, is_up=True)
+    comp = Node(name, is_functional=True, is_up=True, failure_rate=failure_rate)
     start = Node("START", is_functional=False)
     end = Node("END", is_functional=False)
     
@@ -354,16 +429,17 @@ def create_atomic_block(name: str) -> RBD:
 
 if __name__ == "__main__":
 
-    pump_a = create_atomic_block("Bomba_A")
-    pump_b = create_atomic_block("Bomba_B")
-    valve = create_atomic_block("Valvula_Principal")
-    sensor = create_atomic_block("Sensor_Presion")
+    pump_a = create_atomic_block("Bomba_A", failure_rate=0.001)
+    pump_b = create_atomic_block("Bomba_B", failure_rate=0.0003)
+    valve = create_atomic_block("Valvula_Principal", failure_rate=0.005)
+    sensor = create_atomic_block("Sensor_Presion", failure_rate=0.001)
 
     # (Bomba A // Bomba B) >> Valvula >> Sensor
     pumps_subsystem = pump_a // pump_b
     system = pumps_subsystem >> valve >> sensor
+    pumps_subsystem.to_logic_formula(t=100, filename="pumps_subsystem.wcnf")
 
-    print(system)
+    #print(system)
 
-    system.draw(filename="my_system_rbd", view=True)
+    #system.draw(filename="my_system_rbd", view=True)
 
