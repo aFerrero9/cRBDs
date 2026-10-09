@@ -13,12 +13,12 @@ Defines the graph behavior. Must contain exactly one type declaration.
 @NODES
 ------
 Declares all nodes in the topology. 
-Format: node_id, [functional_flag]
-    * Defaults: Nodes are functional by default.
-    * Non-functional: Append a flag like 'nf', 'false', '0', or 'n' (e.g., `START, nf`).
+Format: node_id, failure_rate, [not_functional_flag]
+    * Defaults: Nodes are functional by default (requires exactly 2 items: id, failure_rate).
+    * Non-functional: Require exactly 3 items. Append a flag like 'nf', 'not', 'notfunctional', 'notf', 'nonf', 'false', or 'n' (e.g., `START, 0, nf`).
     * Structural Nodes: The graph strictly requires a START and END node. 
       You may use aliases (e.g., 's', 'inicio', 'e', 'final') ONLY IF accompanied 
-      by a non-functional flag (e.g., `s, nf` parses as START). Functional nodes 
+      by a non-functional flag (e.g., `s, 0, nf` parses as START). Functional nodes 
       named 's' or 'e' are treated as standard internal nodes.
 
 @TOPOLOGY
@@ -35,7 +35,8 @@ RBD format example:
 TYPE = RBD
 
 @NODES
-# id, is_functional (If omitted, True by default)
+# id, failure_rate, [not_functional]
+([not_functional] if node is non-functional)
 
 @TOPOLOGY
 # u -> v
@@ -47,7 +48,8 @@ cRBD format example:
 TYPE = CRBD
 
 @NODES
-# id, is_functional (If omitted, True by default)
+# id, failure_rate, [not_functional]
+([not_functional] if node is non-functional)
 
 @TOPOLOGY
 # u -> v : color_1, color_2, ...
@@ -125,25 +127,35 @@ class RBDParser:
                     # @NODES
                     elif current_section == '@NODES':
                         parts = [p.strip() for p in line.split(',')]
-                        node_id = parts[0]
                         
-                        # By default every listed node is functional
-                        is_functional = True  
-                        
-                        # Only change it if the user explicitly stated otherwise
-                        if len(parts) > 1:
-                            flag = parts[1].lower()
-                            if flag in ('nf', 'false', 'notf', 'nonf', '0', 'n'):
+                        if len(parts) == 2:
+                            # Functional node (Exactly 2 items)
+                            node_id = parts[0]
+                            failure_rate = float(parts[1])
+                            is_functional = True
+                            
+                        elif len(parts) == 3:
+                            # Structural/Non-functional node (Exactly 3 items)
+                            node_id = parts[0]
+                            failure_rate = float(parts[1])
+                            flag = parts[2].lower()
+                            
+                            if flag in ('nf', 'not', 'notfunctional', 'notf', 'nonf', 'false', 'n'):
                                 is_functional = False
+                                # Resolve aliases for structural nodes
                                 if node_id.lower() in ('start', 's', 'inicio', 'source'):
                                     node_id = "START"
                                 if node_id.lower() in ('end', 'e', 'final', 'sink'):
                                     node_id = "END"
-                            elif flag in ('f', 'true', 'fun', '1', 'fn'):
-                                is_functional = True
+                            else:
+                                raise ValueError(f"Unrecognized non-functional flag '{parts[2]}'. Structural nodes require a valid flag.")
+                                
+                        else:
+                            # Enforce the strict 2 or 3 items rule
+                            raise ValueError(f"Invalid format in {parts[0]}. Functional nodes need exactly 2 items, structural nodes need exactly 3. Got {len(parts)}.")
                             
-                        # Create the node as declared
-                        nodes_dict[node_id] = Node(node_id, is_functional=is_functional, is_up=True)
+                        # Create the node passing the parsed failure_rate
+                        nodes_dict[node_id] = Node(node_id, is_functional=is_functional, is_up=True, failure_rate=failure_rate)
                             
                     # @TOPOLOGY
                     elif current_section == '@TOPOLOGY':

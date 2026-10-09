@@ -201,8 +201,8 @@ class CRBD(RBD):
     # Parallel example
    
     start_a = Node("START", is_functional=False)
-    laser_a_1 = Node("LaserA", is_functional=True, is_up=True)
-    laser_b_1 = Node("LaserB", is_functional=True, is_up=True)
+    laser_a_1 = Node("LaserA", is_functional=True, is_up=True, failure_rate=0.002)
+    laser_b_1 = Node("LaserB", is_functional=True, is_up=True, failure_rate=0.005)
     end_a = Node("END", is_functional=False)
     
     nodes_a = {start_a, laser_a_1, laser_b_1, end_a}
@@ -214,8 +214,8 @@ class CRBD(RBD):
     satellite_a = CRBD(nodes_a, edges_a, start_a, end_a, colors_a, coloring_a)
 
     start_b = Node("START", is_functional=False)
-    laser_b_2 = Node("LaserB", is_functional=True, is_up=True)
-    laser_a_2 = Node("LaserA", is_functional=True, is_up=True)
+    laser_b_2 = Node("LaserB", is_functional=True, is_up=True, failure_rate=0.005)
+    laser_a_2 = Node("LaserA", is_functional=True, is_up=True, failure_rate=0.002)
     end_b = Node("END", is_functional=False)
     
     nodes_b = {start_b, laser_b_2, laser_a_2, end_b}
@@ -228,20 +228,18 @@ class CRBD(RBD):
 
     system = satellite_a // satellite_b
 
-    
     print("\nGlobal System Architecture:")
     print(system)
 
-    
     system.draw(filename="my_system_crbd", view=True)
- """
+"""
 
 """ if __name__ == "__main__":
     # Series example
     
     start_a = Node("START", is_functional=False)
-    laser_a_1 = Node("LaserA", is_functional=True, is_up=True)
-    laser_b_1 = Node("LaserB", is_functional=True, is_up=True)
+    laser_a_1 = Node("LaserA", is_functional=True, is_up=True, failure_rate=0.002)
+    laser_b_1 = Node("LaserB", is_functional=True, is_up=True, failure_rate=0.005)
     end_a = Node("END", is_functional=False)
     
     nodes_a = {start_a, laser_a_1, laser_b_1, end_a}
@@ -253,8 +251,8 @@ class CRBD(RBD):
     satellite_a = CRBD(nodes_a, edges_a, start_a, end_a, colors_a, coloring_a)
 
     start_b = Node("START", is_functional=False)
-    laser_b_2 = Node("LaserC", is_functional=True, is_up=True)
-    laser_a_2 = Node("LaserD", is_functional=True, is_up=True)
+    laser_b_2 = Node("LaserC", is_functional=True, is_up=True, failure_rate=0.003)
+    laser_a_2 = Node("LaserD", is_functional=True, is_up=True, failure_rate=0.004)
     end_b = Node("END", is_functional=False)
     
     nodes_b = {start_b, laser_b_2, laser_a_2, end_b}
@@ -267,91 +265,8 @@ class CRBD(RBD):
 
     system = satellite_a >> satellite_b
 
-  
     print("\nGlobal System Architecture:")
     print(system)
 
-    
     system.draw(filename="my_system_crbd", view=True)
- """
-
-
-""" def draw(self, filename="crbd_diagram", view=True):
-        
-        Generates and displays a visual representation of the cRBD using Graphviz.
-        Forces parallel nodes to align vertically by calculating their topological depth.
-        Dynamically shifts edge labels to avoid overlaps in mutual cycles.
-       
-        try:
-            import graphviz
-            from collections import deque
-        except ImportError:
-            raise ImportError("The 'graphviz' package is required. Run: pip install graphviz")
-
-        dot = graphviz.Digraph(comment='Colored Reliability Block Diagram')
-        
-        # Global spacing adjustments
-        dot.attr(rankdir='LR', ranksep='0.4', nodesep='0.4') 
-        dot.attr('node', fontname='Helvetica', fontsize='12', margin='0.1')
-        
-        # Added labelfontname and labelfontsize to control the size of taillabel/headlabel
-        dot.attr('edge', fontname='Helvetica', fontsize='9', labelfontname='Helvetica', labelfontsize='9')
-
-        # Calculate topological depth using BFS to find nodes on the same level
-        depths = {}
-        visited = {self.start}
-        queue = deque([(self.start, 0)])
-
-        while queue:
-            curr_node, current_depth = queue.popleft()
-            
-            if curr_node not in (self.start, self.end):
-                depths[curr_node] = current_depth
-                
-            neighbors = [v for u, v in self.edges if u == curr_node]
-            for neighbor in neighbors:
-                if neighbor not in visited:
-                    visited.add(neighbor)
-                    queue.append((neighbor, current_depth + 1))
-
-        # Group nodes by depth
-        depth_groups = {}
-        for node, depth in depths.items():
-            depth_groups.setdefault(depth, []).append(node)
-
-        # Add START and END explicitly at the absolute extremes
-        with dot.subgraph() as s:
-            s.attr(rank='source')
-            s.node(self.start.id, self.start.id, shape='ellipse', style='filled', fillcolor='lightgray')
-            
-        with dot.subgraph() as s:
-            s.attr(rank='sink')
-            s.node(self.end.id, self.end.id, shape='ellipse', style='filled', fillcolor='lightgray')
-
-        # Add functional nodes grouped by their depth to force vertical alignment
-        for depth, nodes in depth_groups.items():
-            with dot.subgraph() as s:
-                s.attr(rank='same')
-                for node in nodes:
-                    color = 'lightblue' if node.is_up else 'salmon'
-                    s.node(node.id, node.id, shape='box', style='filled', fillcolor=color)
-
-        # Add directed edges with dynamically positioned coloring labels
-        for u, v in self.edges:
-            edge_colors = self.coloring.get((u, v), set())
-            label_text = str(edge_colors) if edge_colors else ""
-            
-            # Logical detection of mutual cycles
-            if (v, u) in self.edges:
-                # Push the label towards the source node (u).
-                # labeldistance moves the label slightly away from the node so it doesn't overlap.
-                dot.edge(u.id, v.id, taillabel=label_text, labeldistance='2.5', minlen='2')
-            else:
-                # Normal behavior for edges without cycles (centered label)
-                dot.edge(u.id, v.id, label=label_text, minlen='2')
-
-        # Render the graph
-        try:
-            dot.render(filename, format='png', view=view, cleanup=True)
-        except Exception as e:
-            print(f"Error rendering graph. Details: {e}") """
+"""

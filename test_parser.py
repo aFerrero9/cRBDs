@@ -57,5 +57,8 @@ def main():
         just_id = [[n.id for n in path] for path in all_paths]
         print(just_id)
 
+        system.to_logic_formula(t=100, filename="pumps_subsystem.wcnf")
+
+
 if __name__ == "__main__":
     main()

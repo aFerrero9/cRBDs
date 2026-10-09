@@ -11,7 +11,7 @@ class Node:
         self.id = id_name
         self.is_functional = is_functional
         self.is_up = is_up
-        self.failure_rate = failure_rate if is_functional else 0.0
+        self.failure_rate = float(failure_rate) if is_functional else 0.0
 
     def __hash__(self):
         return hash(self.id)
