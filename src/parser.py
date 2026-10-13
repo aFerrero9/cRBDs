@@ -1,58 +1,41 @@
 """ 
 File Format Conventions
 =======================
-The parser reads a plain text file containing exactly three mandatory sections.
-Empty lines and lines starting with '#' (comments) are safely ignored.
+Parses a text file with one or more named systems, ending with a logical expression.
+Ignores empty lines and '#' comments.
+
+1. System Definitions:
+Each system block MUST begin with: `NAME = <system_name>`
+
+Followed by these three mandatory sections:
 
 @SYSTEM
--------
-Defines the graph behavior. Must contain exactly one type declaration.
-    TYPE = RBD
-    TYPE = CRBD
+    TYPE = RBD  (or CRBD)
 
 @NODES
-------
-Declares all nodes in the topology. 
-Format: node_id, failure_rate, [not_functional_flag]
-    * Defaults: Nodes are functional by default (requires exactly 2 items: id, failure_rate).
-    * Non-functional: Require exactly 3 items. Append a flag like 'nf', 'not', 'notfunctional', 'notf', 'nonf', 'false', or 'n' (e.g., `START, 0, nf`).
-    * Structural Nodes: The graph strictly requires a START and END node. 
-      You may use aliases (e.g., 's', 'inicio', 'e', 'final') ONLY IF accompanied 
-      by a non-functional flag (e.g., `s, 0, nf` parses as START). Functional nodes 
-      named 's' or 'e' are treated as standard internal nodes.
+    Format: node_id, failure_rate, [non_functional_flag]
+    * Functional: `nodeA, 0.001` (Exactly 2 items)
+    * Non-functional: `START, 0, nf` (Exactly 3 items. Flags: nf, not, false, n)
+    * Structural: Graph requires 'START' and 'END' nodes (aliases like 's' or 'e' must include a non-functional flag).
 
 @TOPOLOGY
----------
-Defines directed edges and colors. All nodes MUST be previously declared in @NODES.
-    * RBD Format:  u -> v
-    * cRBD Format: u -> v : color_1, color_2
-    * Tuple Colors (cRBD): To define a tuple as a single color entity, enclose 
-      it in parentheses. (e.g., `A -> B : red, (blue, green)` parses as 
-      two distinct colors).
+    * RBD:  u -> v
+    * cRBD: u -> v : color1, (tuple_color)
+    Nodes must exist in @NODES.
 
-RBD format example:
-@SYSTEM
-TYPE = RBD
+2. Expression Block:
+@EXP
+MUST be the final section. Evaluates the defined system variables using overloaded operators to generate the final topology.
 
-@NODES
-# id, failure_rate, [not_functional]
-([not_functional] if node is non-functional)
-
-@TOPOLOGY
-# u -> v
-
--------------------
-
-cRBD format example:
-@SYSTEM
-TYPE = CRBD
-
-@NODES
-# id, failure_rate, [not_functional]
-([not_functional] if node is non-functional)
-
-@TOPOLOGY
-# u -> v : color_1, color_2, ...
+Example Structure:
+    NAME = sysA
+    @SYSTEM ...
+    
+    NAME = sysB
+    @SYSTEM ...
+    
+    @EXP
+    sysA // sysB
 """
 import os
 import tempfile
@@ -60,9 +43,7 @@ from rbd import Node, RBD
 from crbd import CRBD
 
 class CRBDParser:
-    """
-    Parser for reading RBD and cRBD topologies from text files.
-    """
+    """ Parser for reading RBD and cRBD topologies from text files. """
 
     @staticmethod
     def _parse_colors(color_string: str) -> set:
@@ -98,6 +79,7 @@ class CRBDParser:
 
     @staticmethod
     def parse_file(filepath: str) -> RBD:
+        """ Parses a single RBD or cRBD system from a text file. """
         system_type = None
         nodes_dict = {}
         edges = set()
@@ -184,7 +166,7 @@ class CRBDParser:
                             elif v_str.lower() in ('end', 'e', 'final', 'sink') and "END" in nodes_dict:
                                 v_str = "END"
                         
-                        # Validaciones estrictas después de resolver los nombres
+                        # Ensure that all nodes used in edges are declared in @NODES
                         if u_str not in nodes_dict:
                             raise ValueError(f"Node '{u_str}' is used in @TOPOLOGY but was not declared in @NODES.")
                         if v_str not in nodes_dict:
