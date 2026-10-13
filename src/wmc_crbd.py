@@ -15,7 +15,7 @@ def run_gpmc(wcnf_filepath: str):
     try:
         # Execute the subprocess
         result = subprocess.run(command, capture_output=True, text=True, check=True)
-        print("=== Raw solver output: ===")
+        print("\n=== Raw solver output: ===")
         print(result.stdout)
         print("\n=== Reliability Results ===")
         

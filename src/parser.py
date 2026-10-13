@@ -267,7 +267,7 @@ class CRBDParser:
                     continue
 
                 # Check if we are starting a new system
-                if stripped_line.upper().startswith('@NAME'):
+                if stripped_line.upper().startswith('NAME'):
                     if '=' in stripped_line:
                         # Process the previously accumulated system before starting a new one
                         parse_accumulated_system()
