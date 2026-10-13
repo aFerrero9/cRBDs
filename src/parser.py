@@ -54,6 +54,8 @@ TYPE = CRBD
 @TOPOLOGY
 # u -> v : color_1, color_2, ...
 """
+import os
+import tempfile
 from rbd import Node, RBD
 from crbd import CRBD
 
@@ -218,3 +220,88 @@ class CRBDParser:
             return RBD(nodes, edges, start_node, end_node)
         else:
             raise ValueError(f"Unknown or missing system TYPE: {system_type}. Must be 'RBD' or 'CRBD'.")
+
+
+    @staticmethod
+    def multiple_parse_file(filepath: str):
+        """ Parses a file containing multiple systems and evaluates the final expression. """
+        systems = {}
+        current_system_name = None
+        current_system_lines = []
+        in_expression_section = False
+        expression_lines = []
+
+        # Nested helper function to avoid repeating the parsing logic
+        def parse_accumulated_system():
+            if not current_system_name or not current_system_lines:
+                return
+            
+            # Create a temporary file that cleans itself up later
+            with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.txt', encoding='utf-8') as temp_file:
+                temp_file.writelines(current_system_lines)
+                temp_filepath = temp_file.name
+            
+            try:
+                # Call the existing parse_file method on the temporary file
+                parsed_system = CRBDParser.parse_file(temp_filepath)
+                systems[current_system_name] = parsed_system
+            finally:
+                # Always ensure the temporary file is removed to keep the OS clean
+                os.remove(temp_filepath)
+
+        # Step 1: Iterate over the multiple systems file
+        with open(filepath, 'r', encoding='utf-8') as f:
+            for line in f:
+                stripped_line = line.strip()
+                
+                if not stripped_line or stripped_line.startswith('#'):
+                    continue
+
+                # Transition to the @EXP section
+                if stripped_line.upper() == '@EXP':
+                    # Parse the last accumulated system before moving to the expression
+                    parse_accumulated_system()
+                    current_system_name = None
+                    current_system_lines = []
+                    in_expression_section = True
+                    continue
+
+                # Check if we are starting a new system
+                if stripped_line.upper().startswith('@NAME'):
+                    if '=' in stripped_line:
+                        # Process the previously accumulated system before starting a new one
+                        parse_accumulated_system()
+                        
+                        # Extract the new system name
+                        current_system_name = stripped_line.split('=')[1].strip()
+                        current_system_lines = []
+                        in_expression_section = False
+                        continue
+
+                # Accumulate lines into the corresponding sections
+                if in_expression_section:
+                    expression_lines.append(stripped_line)
+                elif current_system_name:
+                    # Keep the original 'line' (with newlines) for proper file writing
+                    current_system_lines.append(line)
+
+        # Edge case: If the file ended without an @EXP section but had a system pending
+        parse_accumulated_system()
+
+        # Build the final expression string
+        expression = " ".join(expression_lines).strip()
+        if not expression:
+            raise ValueError("No expression found in the @EXP section.")
+
+        # Evaluate the expression
+        try:
+            # Use Python's native eval(). 
+            # By passing our 'systems' dictionary as the locals parameter, 
+            # variables in the text (like 'satelliteA') will map directly to the parsed objects.
+            print(f"Evaluating expression: {expression}")
+            final_system = eval(expression, {}, systems)
+            return final_system
+        except Exception as e:
+            raise ValueError(f"Error evaluating expression '{expression}': {e}")
+
+

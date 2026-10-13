@@ -336,7 +336,7 @@ class RBD:
             f.write(wcnf_content)
             
         print(f"File {filepath} successfully generated")
-        return filepath   
+        return wcnf_content   
 
     def __repr__(self):
         """String representation of the RBD topology (Adjacency List in BFS order)."""

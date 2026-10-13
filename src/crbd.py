@@ -151,8 +151,6 @@ class CRBD(RBD):
                     seen_paths.add(path_tuple)
                     all_paths.append(path)
 
-        just_id = [[n.id for n in path] for path in all_paths]
-        print(f"---Global paths: {just_id}")
         # Map functional nodes to DIMACS variables (numbers > 0)
         dimacs_mapping = {}
         var_counter = 1
@@ -211,7 +209,7 @@ class CRBD(RBD):
             f.write(wcnf_content)
             
         print(f"File {filepath} successfully generated")
-        return filepath   
+        return wcnf_content
 
     def __repr__(self):
         """String representation of the cRBD topology and coloring function."""

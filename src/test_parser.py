@@ -18,7 +18,7 @@ def main():
     args = parser.parse_args()
     filepath = args.filepath
     
-    # Check if the file actually exists before parsing
+    # Check if the file exists before parsing
     if not os.path.exists(filepath):
         print(f"Error: The file '{filepath}' was not found.")
         sys.exit(1)
@@ -26,10 +26,8 @@ def main():
     print(f"=== PARSING FILE: {filepath} ===")
     
     try:
-        # Call your parser
         system = CRBDParser.parse_file(filepath)
         
-        # Dynamically check the returned type to print the correct structure
         system_type_name = type(system).__name__
         print(f"System Type successfully loaded: {system_type_name}")
         
