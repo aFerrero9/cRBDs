@@ -1,7 +1,9 @@
 """ 
 File Format Conventions
 =======================
-Parses a text file with one or more named systems, ending with a logical expression.
+The parser reads a plain text file containing one or more system definition blocks, 
+followed by a mandatory final expression, which is evaluated to generate the final topology
+and WMC results.
 Ignores empty lines and '#' comments.
 
 1. System Definitions:
@@ -10,7 +12,7 @@ Each system block MUST begin with: `NAME = <system_name>`
 Followed by these three mandatory sections:
 
 @SYSTEM
-    TYPE = RBD  (or CRBD)
+TYPE = RBD (or CRBD)
 
 @NODES
     Format: node_id, failure_rate, [non_functional_flag]
@@ -231,7 +233,7 @@ class CRBDParser:
                 # Always ensure the temporary file is removed to keep the OS clean
                 os.remove(temp_filepath)
 
-        # Step 1: Iterate over the multiple systems file
+        # Iterate over the multiple systems file
         with open(filepath, 'r', encoding='utf-8') as f:
             for line in f:
                 stripped_line = line.strip()
@@ -267,7 +269,7 @@ class CRBDParser:
                     # Keep the original 'line' (with newlines) for proper file writing
                     current_system_lines.append(line)
 
-        # Edge case: If the file ended without an @EXP section but had a system pending
+        # If the file ended without an @EXP section but had a system pending
         parse_accumulated_system()
 
         # Build the final expression string
@@ -277,9 +279,6 @@ class CRBDParser:
 
         # Evaluate the expression
         try:
-            # Use Python's native eval(). 
-            # By passing our 'systems' dictionary as the locals parameter, 
-            # variables in the text (like 'satelliteA') will map directly to the parsed objects.
             print(f"Evaluating expression: {expression}")
             final_system = eval(expression, {}, systems)
             return final_system

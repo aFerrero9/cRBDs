@@ -126,9 +126,9 @@ class CRBD(RBD):
         Converts the cRBD structure into a logic formula in DIMACS (WCNF) format,
         ready to be evaluated by the GPMC solver.
         Params: 
-            t: Mission time (hours, days, etc.) for reliability calculation.
-            filename: Output filename.
-        Returns: the generated filename.
+        - t: Mission time (hours, days, etc.) for reliability calculation.
+        - filename: Output filename.
+        Returns: the generated file content.
         """
         # Extract all global paths from start to end across all color projections
         all_paths = []
@@ -194,10 +194,112 @@ class CRBD(RBD):
                 if node in dimacs_mapping:
                     clause_literals.append(str(dimacs_mapping[node]))
             
-            # Each clause must end with a '0'
+            # Each clause must end with 0
             if clause_literals:
                 clause_line = " ".join(clause_literals) + " 0"
                 lines.append(clause_line)
+
+        wcnf_content = "\n".join(lines)
+        
+        os.makedirs("wmc_files", exist_ok=True)
+        safe_filename = os.path.basename(filename)
+        filepath = os.path.join("wmc_files", safe_filename)
+        
+        with open(filepath, "w") as f:
+            f.write(wcnf_content)
+            
+        print(f"File {filepath} successfully generated")
+        return wcnf_content
+
+    def tseitin_to_logic_formula(self, t: float, filename: str = "model_tseitin.wcnf") -> str:
+        """
+        Converts the cRBD structure into a logic formula in DIMACS (WCNF) format
+        using the Tseitin Transformation to prevent Path Explosion.
+        """
+        # Nodes Mapping (F_n) - Failure variables (1 to N)
+        dimacs_mapping = {}
+        var_counter = 1
+        
+        functional_nodes = sorted(self.functional_nodes, key=lambda n: n.id)
+        for node in functional_nodes:
+            dimacs_mapping[node] = var_counter
+            var_counter += 1
+
+        num_physical_vars = len(functional_nodes)
+
+        # Construct Tseitin clauses for each color projection
+        reach_counter = num_physical_vars + 1
+        clauses = []
+
+        for c in self.colors:
+            # Auxiliary Variables (R_(n,color)) from N+1 onwards
+            # Represents: "Did the success flow reach the output of this node?"
+            c_reach_id = {}
+            c_parents = {}
+            proj_nodes, proj_edges = self._c_projection(c)
+
+            all_nodes_sorted = sorted(list(proj_nodes), key=lambda n: n.id)
+            for node in all_nodes_sorted:
+                c_reach_id[node] = reach_counter
+                reach_counter += 1
+                
+            # Parents Mapping for each node
+            c_parents = {n: [] for n in proj_nodes}
+            for u, v in proj_edges:
+                c_parents[v].append(u)
+
+            # Tseitin Clauses Construction: R_(n,color) <=> (-F_n AND (OR of R_(p,color) for all c_parents p))
+            for node in all_nodes_sorted:
+                R_nc = c_reach_id[node]
+
+                if node.is_functional:
+                    p_reaches = [c_reach_id[p] for p in c_parents[node]]
+            
+                    F_n = dimacs_mapping[node]
+                    # Clause 1: If the node is reached, it must not have failed
+                    clauses.append([-R_nc, -F_n])
+                    # Clause 2: If the node is reached, at least one parent must have been reached
+                    clauses.append([-R_nc] + p_reaches)
+                    # Clause 3: If it didn't fail AND a parent is reached, then the node is reached
+                    for pr in p_reaches:
+                        clauses.append([F_n, -pr, R_nc])
+
+                elif node == self.start:
+                    # START is always reachable
+                    clauses.append([R_nc])
+
+                elif node == self.end:
+                    # END is reachable if any of its c_parents are reachable
+                    p_reaches = [c_reach_id[p] for p in c_parents[node]]
+                    clauses.append([-R_nc] + p_reaches)
+                    for pr in p_reaches:
+                        clauses.append([-pr, R_nc])
+                    # Final Condition: System Failure for color c
+                    # We want the models where the flow does not reach END node for color c
+                    clauses.append([-R_nc])
+
+        num_total_vars = reach_counter - 1
+        num_clauses = len(clauses)
+
+        # DIMACS File Writing
+        lines = []
+        lines.append(f"c c DIMACS WCNF representation of RBD using Tseitin Transformation")
+        lines.append(f"p cnf {num_total_vars} {num_clauses}")
+        
+        # Weights for physical components variables
+        for node, var_id in dimacs_mapping.items():
+            weight_fail, weight_success = node.get_wmc_weights(t)
+            lines.append(f"c p weight {var_id} {weight_fail:.9f} 0")     
+            lines.append(f"c p weight -{var_id} {weight_success:.9f} 0") 
+                
+        # Weights for logical auxiliary variables (R_n): 1 for both states
+        for aux_var in range(num_physical_vars + 1, num_total_vars + 1):
+            lines.append(f"c p weight {aux_var} 1.0 0")
+            lines.append(f"c p weight -{aux_var} 1.0 0")
+
+        for clause in clauses:
+            clause_line = " ".join(map(str, clause)) + " 0"
+            lines.append(clause_line)
 
         wcnf_content = "\n".join(lines)
         
@@ -290,82 +392,3 @@ class CRBD(RBD):
             dot.render(filepath, format='pdf', view=view, cleanup=True)
         except Exception as e:
             print(f"Error rendering graph. Details: {e}")
-
-
-        
-
-
-# MINITEST: two satellites mini version
-""" if __name__ == "__main__":
-    # Parallel example
-   
-    start_a = Node("START", is_functional=False)
-    laser_a_1 = Node("LaserA", is_functional=True, is_up=True, failure_rate=0.002)
-    laser_b_1 = Node("LaserB", is_functional=True, is_up=True, failure_rate=0.005)
-    end_a = Node("END", is_functional=False)
-    
-    nodes_a = {start_a, laser_a_1, laser_b_1, end_a}
-    edges_a = {(start_a, laser_a_1), (laser_a_1, laser_b_1), (laser_a_1, end_a), (laser_b_1, end_a)}
-    
-    colors_a = {"red"}
-    coloring_a = {e: {"red"} for e in edges_a}
-    
-    satellite_a = CRBD(nodes_a, edges_a, start_a, end_a, colors_a, coloring_a)
-
-    start_b = Node("START", is_functional=False)
-    laser_b_2 = Node("LaserB", is_functional=True, is_up=True, failure_rate=0.005)
-    laser_a_2 = Node("LaserA", is_functional=True, is_up=True, failure_rate=0.002)
-    end_b = Node("END", is_functional=False)
-    
-    nodes_b = {start_b, laser_b_2, laser_a_2, end_b}
-    edges_b = {(start_b, laser_b_2), (laser_b_2, laser_a_2), (laser_b_2, end_b), (laser_a_2, end_b)}
-    
-    colors_b = {"blue"}
-    coloring_b = {e: {"blue"} for e in edges_b}
-    
-    satellite_b = CRBD(nodes_b, edges_b, start_b, end_b, colors_b, coloring_b)
-
-    system = satellite_a // satellite_b
-
-    print("\nGlobal System Architecture:")
-    print(system)
-
-    system.draw(filename="my_system_crbd", view=True)
-"""
-
-""" if __name__ == "__main__":
-    # Series example
-    
-    start_a = Node("START", is_functional=False)
-    laser_a_1 = Node("LaserA", is_functional=True, is_up=True, failure_rate=0.002)
-    laser_b_1 = Node("LaserB", is_functional=True, is_up=True, failure_rate=0.005)
-    end_a = Node("END", is_functional=False)
-    
-    nodes_a = {start_a, laser_a_1, laser_b_1, end_a}
-    edges_a = {(start_a, laser_a_1), (laser_a_1, laser_b_1), (laser_a_1, end_a), (laser_b_1, end_a)}
-    
-    colors_a = {"red"}
-    coloring_a = {e: {"red"} for e in edges_a}
-    
-    satellite_a = CRBD(nodes_a, edges_a, start_a, end_a, colors_a, coloring_a)
-
-    start_b = Node("START", is_functional=False)
-    laser_b_2 = Node("LaserC", is_functional=True, is_up=True, failure_rate=0.003)
-    laser_a_2 = Node("LaserD", is_functional=True, is_up=True, failure_rate=0.004)
-    end_b = Node("END", is_functional=False)
-    
-    nodes_b = {start_b, laser_b_2, laser_a_2, end_b}
-    edges_b = {(start_b, laser_b_2), (laser_b_2, laser_a_2), (laser_b_2, end_b), (laser_a_2, end_b)}
-    
-    colors_b = {"blue"}
-    coloring_b = {e: {"blue"} for e in edges_b}
-    
-    satellite_b = CRBD(nodes_b, edges_b, start_b, end_b, colors_b, coloring_b)
-
-    system = satellite_a >> satellite_b
-
-    print("\nGlobal System Architecture:")
-    print(system)
-
-    system.draw(filename="my_system_crbd", view=True)
-"""

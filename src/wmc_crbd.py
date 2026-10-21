@@ -13,11 +13,10 @@ def run_gpmc(wcnf_filepath: str):
     print(f"Command: {' '.join(command)}")
     
     try:
-        # Execute the subprocess
+        # Execute command
         result = subprocess.run(command, capture_output=True, text=True, check=True)
         print("\n=== Raw solver output: ===")
         print(result.stdout)
-        print("\n=== Reliability Results ===")
         
         for line in result.stdout.splitlines():
             # Look for the line containing the exact calculation
@@ -25,9 +24,8 @@ def run_gpmc(wcnf_filepath: str):
                 # Split by spaces and take the last string 
                 value_str = line.split()[-1]
                 failure_prob = float(value_str)
-                prob_percentage = failure_prob * 100
                 
-                print(f"System failure probability: {prob_percentage}%")
+                print(f"\nUnreliability: {failure_prob}")
                 break
         
     except subprocess.CalledProcessError as e:
@@ -52,7 +50,13 @@ def main():
         type=float, 
         help="Mission time t"
     )
-    
+
+    parser.add_argument(
+        "--o", 
+        action="store_true", 
+        help="Use Tseitin Transformation for optimization."
+    )
+
     args = parser.parse_args()
     filepath = args.filepath
 
@@ -75,8 +79,11 @@ def main():
         print(f"\nPARSER ERROR: {e}")
         sys.exit(1)
 
-    system.to_logic_formula(t=time, filename=f"{file_name}.wcnf")
-    
+    if args.o:
+        system.tseitin_to_logic_formula(t=time, filename=f"{file_name}.wcnf")
+    else:
+        system.to_logic_formula(t=time, filename=f"{file_name}.wcnf")
+
     # Run the solver on the generated file
     run_gpmc(f"wmc_files/{file_name}.wcnf")
 

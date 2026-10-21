@@ -257,7 +257,6 @@ class RBD:
         else:
             # Recursive case
             for neighbor in adj_list[init]:
-                # We use RBD._decomposition_lemma to avoid issues with CRBD subclassing. 
                 RBD._decomposition_lemma(self, adj_list, neighbor, dst, current_path, all_paths)
 
         return all_paths
@@ -267,9 +266,9 @@ class RBD:
         Converts the RBD structure into a logic formula in DIMACS (WCNF) format,
         ready to be evaluated by the GPMC solver.
         Params: 
-            t: Mission time (hours, days, etc.) for reliability calculation.
-            filename: Output filename.
-        Returns: the generated filename.
+        - t: Mission time (hours, days, etc.) for reliability calculation.
+        - filename: Output filename.
+        Returns: the generated file content.
         """
         # Extract all paths from start to end
         graph = {n: [] for n in self.nodes}
@@ -282,7 +281,7 @@ class RBD:
         dimacs_mapping = {}
         var_counter = 1
         
-        # Sorted by node ID to ensure deterministic variable mapping in every run.
+        # Sorted by node ID to ensure deterministic variable mapping in every run
         functional_nodes = sorted(self.functional_nodes, key=lambda n: n.id)
         for node in functional_nodes:
             dimacs_mapping[node] = var_counter
@@ -336,8 +335,108 @@ class RBD:
             f.write(wcnf_content)
             
         print(f"File {filepath} successfully generated")
-        return wcnf_content   
+        return wcnf_content
 
+    def tseitin_to_logic_formula(self, t: float, filename: str = "model_tseitin.wcnf") -> str:
+        """
+        Converts the RBD structure into a logic formula in DIMACS (WCNF) format
+        using the Tseitin Transformation to prevent Path Explosion.
+        """
+        # Nodes Mapping (F_n) - Failure variables (1 to N)
+        dimacs_mapping = {}
+        var_counter = 1
+        
+        functional_nodes = sorted(self.functional_nodes, key=lambda n: n.id)
+        for node in functional_nodes:
+            dimacs_mapping[node] = var_counter
+            var_counter += 1
+
+        num_physical_vars = len(functional_nodes)
+        
+        # Auxiliary Variables (R_n) from N+1 onwards
+        # Represents: "Did the success flow reach the output of this node?"
+        reach_id = {}
+        reach_counter = num_physical_vars + 1
+        
+        all_nodes_sorted = sorted(list(self.nodes), key=lambda n: n.id)
+        for node in all_nodes_sorted:
+            reach_id[node] = reach_counter
+            reach_counter += 1
+            
+        num_total_vars = reach_counter - 1
+
+        # Parents Mapping for each node
+        parents = {n: [] for n in self.nodes}
+        for u, v in self.edges:
+            parents[v].append(u)
+
+        clauses = []
+        
+        # Tseitin Clauses Construction: R_n <=> (-F_n AND (OR of R_p for all parents p))
+        for node in all_nodes_sorted:
+            R_n = reach_id[node]
+
+            if node.is_functional:
+                p_reaches = [reach_id[p] for p in parents[node]]
+        
+                F_n = dimacs_mapping[node]
+                # Clause 1: If the node is reached, it must not have failed
+                clauses.append([-R_n, -F_n])
+                # Clause 2: If the node is reached, at least one parent must have been reached
+                clauses.append([-R_n] + p_reaches)
+                # Clause 3: If it didn't fail AND a parent is reached, then the node is reached
+                for pr in p_reaches:
+                    clauses.append([F_n, -pr, R_n])
+
+            elif node == self.start:
+                # START is always reachable
+                clauses.append([R_n])
+
+            elif node == self.end:
+                # END is reachable if any of its parents are reachable
+                p_reaches = [reach_id[p] for p in parents[node]]
+                clauses.append([-R_n] + p_reaches)
+                for pr in p_reaches:
+                    clauses.append([-pr, R_n])
+            
+        # Final Condition: System Failure
+        # We want the models where the flow does not reach END node
+        clauses.append([-reach_id[self.end]])
+
+        num_clauses = len(clauses)
+
+        # DIMACS File Writing
+        lines = []
+        lines.append(f"c c DIMACS WCNF representation of RBD using Tseitin Transformation")
+        lines.append(f"p cnf {num_total_vars} {num_clauses}")
+        
+        # Weights for physical components variables
+        for node, var_id in dimacs_mapping.items():
+            weight_fail, weight_success = node.get_wmc_weights(t)
+            lines.append(f"c p weight {var_id} {weight_fail:.9f} 0")     
+            lines.append(f"c p weight -{var_id} {weight_success:.9f} 0") 
+                
+        # Weights for logical auxiliary variables (R_n): 1 for both states
+        for aux_var in range(num_physical_vars + 1, num_total_vars + 1):
+            lines.append(f"c p weight {aux_var} 1.0 0")
+            lines.append(f"c p weight -{aux_var} 1.0 0")
+
+        for clause in clauses:
+            clause_line = " ".join(map(str, clause)) + " 0"
+            lines.append(clause_line)
+
+        wcnf_content = "\n".join(lines)
+        
+        os.makedirs("wmc_files", exist_ok=True)
+        safe_filename = os.path.basename(filename)
+        filepath = os.path.join("wmc_files", safe_filename)
+        
+        with open(filepath, "w") as f:
+            f.write(wcnf_content)
+            
+        print(f"File {filepath} successfully generated")
+        return wcnf_content
+    
     def __repr__(self):
         """String representation of the RBD topology (Adjacency List in BFS order)."""
         header = f"RBD(Functional Nodes: {len(self.functional_nodes)}, Total Edges: {len(self.edges)})"
@@ -420,36 +519,3 @@ class RBD:
             dot.render(filepath, format='pdf', view=view, cleanup=True)
         except Exception as e:
             print(f"Error rendering graph. Details: {e}")
-        
-
-
-
-# MINITEST
-
-def create_atomic_block(name: str, failure_rate: float) -> RBD:
-    """Helper function to quickly create a single-component RBD."""
-    comp = Node(name, is_functional=True, is_up=True, failure_rate=failure_rate)
-    start = Node("START", is_functional=False)
-    end = Node("END", is_functional=False)
-    
-    nodes = {start, comp, end}
-    edges = {(start, comp), (comp, end)}
-    
-    return RBD(nodes, edges, start, end)
-
-""" if __name__ == "__main__":
-
-    pump_a = create_atomic_block("Bomba_A", failure_rate=0.001)
-    pump_b = create_atomic_block("Bomba_B", failure_rate=0.0003)
-    valve = create_atomic_block("Valvula_Principal", failure_rate=0.005)
-    sensor = create_atomic_block("Sensor_Presion", failure_rate=0.001)
-
-    # (Bomba A // Bomba B) >> Valvula >> Sensor
-    pumps_subsystem = pump_a // pump_b
-    system = pumps_subsystem >> valve >> sensor
-    pumps_subsystem.to_logic_formula(t=100, filename="pumps_subsystem.wcnf")
-
-    #print(system)
-
-    #system.draw(filename="my_system_rbd", view=True)
- """
