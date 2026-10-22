@@ -126,7 +126,7 @@ class CRBDParser:
                             failure_rate = float(parts[1])
                             flag = parts[2].lower()
                             
-                            if flag in ('nf', 'not', 'notfunctional', 'notf', 'nonf', 'false', 'n'):
+                            if flag in ('nf', 'not', 'nonfunctional', 'notf', 'nonf', 'false', 'n'):
                                 is_functional = False
                                 # Resolve aliases for structural nodes
                                 if node_id.lower() in ('start', 's', 'inicio', 'source'):
