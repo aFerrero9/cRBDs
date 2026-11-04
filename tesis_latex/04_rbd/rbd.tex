@@ -1,0 +1,33 @@
+\chapter{Diagramas de Bloques de Confiabilidad (RBDs)}
+\label{chapter:rbd}
+En este capítulo se introduce el modelo matemático sobre el cual yace este trabajo. En \ref{sec:rbd_definicion} se establece la definición formal de \gls{RBD} (\textit{Reliability Block Diagram}). En \ref{sec:rbd_semantica} se describen definiciones de carácter semántico, como \textit{path} y \textit{cut set}. Luego, en \ref{sec:rbd_composiciones} se determinan los operadores del modelo: composición en serie y en paralelo.
+Por último, se enuncia y demuestra una proposición que asegura que el modelo es composicional. Adicionalmente,
+a lo largo del capítulo, se justifican algunas decisiones de diseño y restricciones importantes del modelo.
+Posteriormente, en el siguiente capítulo, se definirá, en términos de RBDs, los RBD coloreados, que permiten extender la expresividad del modelo para que, además de composicional, sea cerrado bajo operadores y modular.
+
+Previo al desarrollo de la definición formal de RBD, veamos los antecedentes teóricos necesarios.
+\section{Preliminares}
+\label{sec:rbd_prelim}
+
+
+
+
+A \textit{directed graph} $G$ is a tuple $(V,E)$ where $V$ is a set of vertices and $E \subseteq V \times V$ is a set of ordered pairs. Given a graph $\graph$, a \textit{walk} is a sequence of vertices $\walk$ such that $\forall i: 1 \le i \le n-1 : (v_i, v_{i+1}) \in E$. If all vertices are distinct, a walk is called a \textit{path}. A \textit{cycle} is a walk where the only repeated vertices are $v_1=v_k$. A \textit{DAG (Directed Acyclic Graph)} is a directed graph that has no cycles.
+
+Given a graph $\graph$ and a subset of nodes $X \subseteq V$, the \textit{induced graph} $\indgraph{X}$ is defined as: 
+%
+\[\indgraph{X} = (X, E \cap (X \times X)).\]
+
+
+
+\section{RBD: Definición formal}
+\label{sec:rbd_definicion}
+\completar{Definición de RBD como grafo dirigido acíclico (DAG) con nodos terminales \start y \nd.}
+
+\section{Semántica}
+\label{sec:rbd_semantica}
+\completar{Semántica de conectividad, estados de los componentes y función de estructura / probabilidad de supervivencia.}
+
+\section{Composiciones}
+\label{sec:rbd_composiciones}
+\completar{Operaciones de composición (serie, paralelo, puente / grafos arbitrarios).}

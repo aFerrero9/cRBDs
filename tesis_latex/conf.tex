@@ -1,0 +1,40 @@
+% =============================================================================
+% DATOS DE LA TESIS
+% =============================================================================
+\newcommand{\tfcTitle}{Diagramas de Bloques de Confiabilidad Extendidos con Colores: Formalización y Análisis}
+\newcommand{\tfcAuthor}{Andrés Valentino Ferrero}
+\newcommand{\tfcAdvisor}{Dr. Pedro R. D'Argenio}
+\newcommand{\tfcGrade}{Licenciado en Ciencias de la Computación}
+\newcommand{\tfcFaculty}{FACULTAD DE MATEMÁTICA, ASTRONOMÍA, FÍSICA Y COMPUTACIÓN}
+\newcommand{\tfcCollege}{UNIVERSIDAD NACIONAL DE CÓRDOBA}
+
+% Parche de compatibilidad para la página de certificación en main.tex
+\newcommand{\authorname}{\tfcAuthor}
+
+% Comandos auxiliares de edición
+\newcommand{\citeme}[1]{{\color{red}{¡¡CITEME: #1!!}}}
+\newcommand{\completar}[1]{{\color{red!75}{Completar: #1}}}
+
+% =============================================================================
+% MACROS MATEMÁTICAS Y DE NOTACIÓN (RBD / cRBD)
+% =============================================================================
+\newcommand{\pig}{\Pi_{G}}
+\newcommand{\pigp}[1]{\Pi_{#1}}
+\newcommand{\kutp}[1]{\mathcal{K}_{#1}}
+\newcommand{\pigc}{{\Pi_{G}}_c}
+\newcommand{\start}{\textsc{start}}
+\newcommand{\nd}{\textsc{end}}
+% Alias por si usás \snode y \tnode en las plantillas de capítulos
+\newcommand{\rbd}{(G, \start, \nd)}
+\newcommand{\rbdp}[1]{\ensuremath{(G_{#1}, \start_{#1}, \nd_{#1})}}
+\newcommand{\graph}{G=(V,E)}
+\newcommand{\graphp}[1]{\ensuremath{G_{#1}=(V_{#1},E_{#1})}}
+\newcommand{\rgraph}{G=(V_f \uplus V_n,E)}
+\newcommand{\walk}{v_1, ... , v_k}
+\newcommand{\indgraph}[1]{G^{#1}}
+\newcommand{\crbd}{(G, \start, \nd, \delta)}
+\newcommand{\crbdp}[1]{\ensuremath{(G_{#1}, \start_{#1}, \nd_{#1}, \delta_{#1})}}
+
+% Variables lógicas para la transformación de Tseitin
+\newcommand{\reach}[2]{R_{#1, #2}} % Alcanzabilidad: \reach{n}{c} -> R_{n, c}
+\newcommand{\fail}[1]{F_{#1}}      % Falla física:   \fail{n}     -> F_{n}

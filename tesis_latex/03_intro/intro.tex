@@ -1,0 +1,25 @@
+\chapter{Introducción}
+\label{chapter:intro}
+
+\section{Descripción general}
+\label{sec:intro_descripcion}
+\completar{Contexto general sobre confiabilidad de sistemas e importancia del modelado formal.}
+
+\section{Problemática y motivación}
+\label{sec:intro_problematica}
+\completar{Limitaciones expresivas de los RBDs clásicos para sistemas multicapa/multiflujo y explosión combinatoria en la evaluación por caminos mínimos.}
+
+\section{Contribución}
+\label{sec:intro_contribucion}
+\completar{Detalle de los aportes teóricos (formalización y codificación de Tseitin para cRBDs) y prácticos (herramienta en Python).}
+
+\section{Organización del trabajo}
+\label{sec:intro_overview}
+
+El resto de este trabajo se estructura en dos partes principales:
+
+En la \textbf{Parte~\ref{part:modelado}} se aborda el marco teórico y formal de los modelos gráficos de confiabilidad. En el Capítulo~\ref{chapter:rbd} se definen formalmente los \gls{RBD} como grafos dirigidos acíclicos, su semántica y sus operaciones de composición. Luego, en el Capítulo~\ref{chapter:crbd} se extiende este formalismo hacia los \gls{cRBD} sobre grafos dirigidos generales.
+
+En la \textbf{Parte~\ref{part:codificacion_herramienta}} se presenta la resolución computacional y su implementación. El Capítulo~\ref{chapter:wmc} introduce el problema de \gls{WMC} y desarrolla tanto la codificación clásica por caminos como la traducción optimizada mediante la transformación de Tseitin. En el Capítulo~\ref{chapter:herramienta} se detalla la arquitectura, las funcionalidades y el modo de uso de la herramienta desarrollada. En el Capítulo~\ref{chapter:ejemplos} se evalúa la propuesta a través de distintos ejemplos y casos de estudio.
+
+Finalmente, en el Capítulo~\ref{chapter:conclu} se exponen las conclusiones generales del trabajo y las líneas futuras de investigación.

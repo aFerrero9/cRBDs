@@ -1,0 +1,310 @@
+\documentclass[spanish,a4paper,oneside,12pt,openright]{book}
+\usepackage{graphicx}
+\usepackage{amsmath,amsfonts,amssymb}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+%TNRoman:
+%\usepackage{newtxtext,newtxmath}
+%Arial-Helvetica:
+%\usepackage[T1]{fontenc}
+%\usepackage[scaled=0.92]{helvet}
+%\renewcommand{\familydefault}{\sfdefault}
+\usepackage[spanish, es-tabla]{babel}
+\usepackage[Algoritmo]{algorithm}
+\usepackage{algpseudocode}
+\usepackage{url}
+\usepackage{fancyhdr}
+\usepackage{epstopdf}
+\usepackage{minted}
+\usepackage{csquotes}
+\usepackage{rotating}
+\usepackage{etoolbox}
+\usepackage{zref-xr}
+\usepackage{amssymb}
+\usepackage{hyperref}
+\usepackage[authoryear,round,longnamesfirst]{natbib}
+\usepackage{multicol}
+\usepackage{spverbatim}
+\usepackage[pdf]{graphviz}
+\usepackage{dirtree}
+\usepackage{tabularx}
+    \newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\usepackage{emptypage}
+\usepackage[acronym,shortcuts,xindy]{glossaries}
+\usepackage{markdown}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{changepage}
+\usepackage{tcolorbox}
+\usepackage{listings}
+\usepackage{datetime}
+
+\newcommand{\capitalmonthname}[1]{%
+  \ifcase#1\or
+    Enero\or Febrero\or Marzo\or Abril\or Mayo\or Junio\or
+    Julio\or Agosto\or Septiembre\or Octubre\or Noviembre\or Diciembre
+  \fi
+}
+
+\newdateformat{monthyeardate}{%
+  \capitalmonthname{\THEMONTH}, \THEYEAR}
+
+\input{conf}
+
+\setlength{\headheight}{15pt}
+
+% wide page for side by side figures, tables, etc
+\newlength{\offsetpage}
+\setlength{\offsetpage}{1.0cm}
+\newenvironment{widepage}{\begin{adjustwidth}{-\offsetpage}{-\offsetpage}%
+    \addtolength{\textwidth}{2\offsetpage}}%
+{\end{adjustwidth}}
+
+\newtheorem{definition}{Definición}
+
+\renewcommand{\listalgorithmname}{Índice de Algoritmos}
+
+\addto\extrasspanish{
+    \renewcommand{\sectionautorefname}{Sec.}
+}
+
+\makeglossaries
+
+\DeclareMathOperator*{\argmax}{arg\,max}  % in your preamble
+\DeclareMathOperator*{\argmin}{arg\,min}  % in your preamble
+
+\DeclareMathOperator*{\minimize}{minimize}
+\DeclareMathOperator*{\maximize}{maximize}
+
+
+\input{acronimos}
+
+\lhead[]{\rightmark}
+\chead[]{}
+\rhead[\leftmark]{}
+\renewcommand{\headrulewidth}{0.5pt}
+
+\fancypagestyle{plain}{
+\fancyhead[L]{}
+\fancyhead[C]{}
+\fancyhead[R]{}
+\renewcommand{\headrulewidth}{0pt}
+}
+
+\pagestyle{fancy}
+
+\widowpenalty 10000
+\clubpenalty 10000
+
+\renewcommand{\listingscaption}{Algoritmo}
+\renewcommand{\listoflistingscaption}{Lista de algoritmos}
+
+%\usemintedstyle{algol_nu}
+%https://pygments.org/styles/
+
+\setminted{
+    breaklines=true
+}
+
+\renewcommand{\listingscaption}{Código}
+\renewcommand{\thelisting}{\thesection.\arabic{listing}}
+\preto\section{\setcounter{listing}{0}}
+
+\begin{document}
+
+% HOJA EN BLANCO DE GUARDA INICIAL
+\pagenumbering{gobble}
+\thispagestyle{empty}
+\mbox{}
+\newpage
+
+% CARÁTULA
+\input{./00_tapa/tapa.tex} \cleardoublepage
+
+\pagenumbering{gobble}
+Certifico que el trabajo incluido en este documento es el resultado de tareas de investigación
+originales y que no ha sido presentado para optar a un título en ninguna otra
+Universidad o Institución.
+
+\vspace{3cm}
+\begin{flushright}
+\tfcAuthor
+\end{flushright}
+\cleardoublepage
+
+% RECONOCIMIENTOS + AGRADECIMIENTOS ============================================
+
+%\chapter*{Reconocimientos}
+%\pagenumbering{Roman} % para comenzar la numeracion de paginas en numeros romanos
+%\addcontentsline{toc}{chapter}{Reconocimientos} % si queremos que aparezca en el índice
+%\markboth{RECONOCIMIENTOS}{RECONOCIMIENTOS} % encabezado
+%Esta Tesis fue desarrollada gracias a la ayuda económica de ...
+
+
+%\phantom{p. 1}
+\clearpage
+\thispagestyle{empty}
+\phantom{p. 2}
+\clearpage
+
+\chapter*{Agradecimientos} % si no queremos que añada la palabra "Capitulo"
+\pagenumbering{Roman} % para comenzar la numeracion de paginas en numeros romanos
+\addcontentsline{toc}{chapter}{Agradecimientos} % si queremos que aparezca en el índice
+\markboth{AGRADECIMIENTOS}{AGRADECIMIENTOS} % encabezado
+\input{./01_agradecimientos/agradecimientos.tex}
+
+% ABSTRACT ====================================================================
+
+\phantom{p. 1}
+\clearpage
+\thispagestyle{empty}
+\phantom{p. 2}
+\clearpage
+
+\chapter*{Resumen} % si no queremos que añada la palabra "Capitulo"
+\addcontentsline{toc}{chapter}{Resumen} % si queremos que aparezca en el índice
+\markboth{RESUMEN}{RESUMEN} % encabezado
+\input{./02_resumen/resumen_es.tex}
+
+\phantom{p. 1}
+\clearpage
+\thispagestyle{empty}
+
+\chapter*{Abstract} % si no queremos que añada la palabra "Capitulo"
+\addcontentsline{toc}{chapter}{Abstract} % si queremos que aparezca en el índice
+\markboth{ABSTRACT}{ABSTRACT} % encabezado
+\input{./02_resumen/resumen_en.tex}
+
+% \clearpage
+% \phantom{p. 1}
+% \thispagestyle{empty}
+
+% GLOSARIO=====================================================================
+
+% \renewcommand*\glspostdescription{\dotfill}
+% \setlength{\glslistdottedwidth}{1\textwidth}
+% \setlength{\glsdescwidth}{0.89\textwidth}
+% \markboth{Glosario}{Glosario} % encabezado
+% \glsaddall
+% \printglossary[type=\acronymtype,title=Glosario]
+% \addcontentsline{toc}{chapter}{Glosario}
+
+
+% CONTENIDOS ==================================================================
+\phantom{p. 1}
+\clearpage
+
+\tableofcontents % indice de contenidos
+
+\phantom{p. 1}
+\clearpage
+\thispagestyle{empty}
+\phantom{p. 2}
+\clearpage
+
+% FIGURES =====================================================================
+
+\cleardoublepage
+\addcontentsline{toc}{chapter}{Índice de figuras} % para que aparezca en el indice de contenidos
+\listoffigures % indice de figuras
+
+\phantom{p. 1}
+\clearpage
+\thispagestyle{empty}
+\phantom{p. 1}
+\clearpage
+
+% TABLES ======================================================================
+
+% \cleardoublepage
+% \addcontentsline{toc}{chapter}{Índice de tablas} % para que aparezca en el indice de contenidos
+% \listoftables % indice de tablas
+
+% pagina en blanco
+\newpage
+
+\cleardoublepage
+\renewcommand\listoflistingscaption{Índice de códigos}
+\listoflistings % Now typeset the list
+\addcontentsline{toc}{chapter}{Índice de código} % para que aparezca en el indice de contenidos
+
+% pagina en blanco
+\newpage
+\pagenumbering{arabic}
+\phantom{p. 1}
+\clearpage
+
+
+% CONTENT =====================================================================
+
+% Capítulo 1: Introducción
+\input{./03_intro/intro.tex} \cleardoublepage
+
+% =============================================================================
+\part{Extendiendo la expresividad de los Diagramas de Bloques de Confiabilidad}
+\label{part:modelado}
+% =============================================================================
+
+% Capítulo 2: RBD
+\input{./04_rbd/rbd.tex} \cleardoublepage
+
+% Capítulo 3: cRBD
+\input{./05_crbd/crbd.tex} \cleardoublepage
+
+% =============================================================================
+\part{Codificación Lógica, Implementación y Casos de Estudio}
+\label{part:codificacion_herramienta}
+% =============================================================================
+
+% Capítulo 4: WMC y Codificación
+\input{./06_wmc/wmc.tex} \cleardoublepage
+
+% Capítulo 5: La Herramienta
+\input{./07_herramienta/herramienta.tex} \cleardoublepage
+
+% Capítulo 6: Ejemplos / Casos de Estudio
+\input{./08_ejemplos/ejemplos.tex} \cleardoublepage
+
+% =============================================================================
+% Capítulo 7: Conclusiones
+% =============================================================================
+\input{./09_conclu/conclu.tex} \cleardoublepage
+
+
+% APENDICES====================================================================
+
+
+% \appendix
+
+
+
+% BIBLIOGRAFIA ================================================================
+
+\cleardoublepage
+\addcontentsline{toc}{chapter}{Bibliografía}
+\bibliographystyle{apalike}
+\bibliography{tesis}
+
+% HOJA FINAL DE AVAL DEL TRIBUNAL ======================
+\cleardoublepage
+\thispagestyle{empty}
+\vspace*{3cm}
+\noindent
+Se deja constancia de que la presente versión final del Trabajo Especial titulado \textbf{``\tfcTitle''}, presentado por \textbf{\tfcAuthor}, se corresponde con la versión aprobada por el Tribunal Examinador.
+
+\vspace{4cm}
+\begin{center}
+\begin{tabular}{ccc}
+\rule{4.5cm}{0.4pt} & \hspace{0.8cm}\rule{4.5cm}{0.4pt}\hspace{0.8cm} & \rule{4.5cm}{0.4pt} \\[0.2cm]
+Firma y Aclaración & Firma y Aclaración & Firma y Aclaración \\
+Miembro del Tribunal & Miembro del Tribunal & Miembro del Tribunal
+\end{tabular}
+\end{center}
+
+% HOJA EN BLANCO DE GUARDA FINAL
+\clearpage
+\thispagestyle{empty}
+\mbox{}
+\clearpage
+
+\end{document}

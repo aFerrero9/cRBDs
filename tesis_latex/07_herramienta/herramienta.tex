@@ -1,0 +1,26 @@
+\chapter{Diseño e Implementación de la Herramienta}
+\label{chapter:herramienta}
+
+\section{Arquitectura general y flujo de procesamiento}
+\label{sec:tool_arquitectura}
+\completar{Visión general del pipeline en Python desde el archivo de entrada hasta el cálculo de confiabilidad.}
+
+\section{Especificación y lectura de modelos}
+\label{sec:tool_parser}
+\completar{Formato de representación de la topología (nodos, aristas coloreadas, tasas de falla $\lambda$ y tiempo de misión $t$).}
+
+\section{Generación de fórmulas lógicas y formato DIMACS WCNF}
+\label{sec:tool_wcnf}
+\completar{Implementación del método \texttt{to\_logic\_formula}, mapeo de identificadores de variables y escritura de cláusulas y pesos.}
+
+\section{Integración con el solver GPMC y evaluación}
+\label{sec:tool_gpmc}
+\completar{Invocación del solver exacto GPMC, parseo de la salida y cómputo de la probabilidad final.}
+
+\section{Visualización automática mediante Graphviz}
+\label{sec:tool_graphviz}
+\completar{Generación automática de diagramas topológicos en lenguaje DOT para RBDs y cRBDs.}
+
+\section{Modo de uso}
+\label{sec:tool_uso}
+\completar{Requisitos del entorno, interfaz de línea de comandos (\texttt{python3 src/wmc\_crbd.py <filepath> <mission\_time>}) y formato de salida.}
