@@ -15,6 +15,20 @@ __pycache__/
 *.so
 *.cnf
 *.wcnf
+*.acn
+*.aux
+*.blg
+*.bbl
+*.fdb_latexmk
+*.fls
+*.glo
+*.log
+*.lol
+*.lof
+*.out
+*.synctex.gz
+*.toc
+*.xdy
 
 # Entornos virtuales (ignorar dependencias pesadas)
 venv/

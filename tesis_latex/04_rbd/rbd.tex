@@ -1,16 +1,34 @@
 \chapter{Diagramas de Bloques de Confiabilidad (RBDs)}
 \label{chapter:rbd}
-En este capítulo se introduce el modelo matemático sobre el cual yace este trabajo. En \ref{sec:rbd_definicion} se establece la definición formal de \gls{RBD} (\textit{Reliability Block Diagram}). En \ref{sec:rbd_semantica} se describen definiciones de carácter semántico, como \textit{path} y \textit{cut set}. Luego, en \ref{sec:rbd_composiciones} se determinan los operadores del modelo: composición en serie y en paralelo.
+En este capítulo se introduce el modelo matemático sobre el cual yace este trabajo. 
+En \ref{sec:rbd_definicion} se establece la definición formal de \gls{RBD} (\textit{Reliability Block Diagram}). 
+En \ref{sec:rbd_semantica} se describen definiciones de carácter semántico, como \textit{path} y \textit{cut set}. 
+Luego, en \ref{sec:rbd_composiciones} se determinan los operadores del modelo: composición en serie y en paralelo.
 Por último, se enuncia y demuestra una proposición que asegura que el modelo es composicional. Adicionalmente,
 a lo largo del capítulo, se justifican algunas decisiones de diseño y restricciones importantes del modelo.
 Posteriormente, en el siguiente capítulo, se definirá, en términos de RBDs, los RBD coloreados, que permiten extender la expresividad del modelo para que, además de composicional, sea cerrado bajo operadores y modular.
 
-Previo al desarrollo de la definición formal de RBD, veamos los antecedentes teóricos necesarios.
 \section{Preliminares}
 \label{sec:rbd_prelim}
+Previo al desarrollo de la definición formal de RBD, veamos los antecedentes teóricos necesarios.
+Antes de ahondar en la matemática, abordemos el concepto de RBD. 
+Dado un sistema industrial, un Diagrama de Bloques de Confiabilidad modela el flujo de éxito del mismo. 
+Es una representación gráfica de alto nivel, y es usado para modelar una o varias tareas que el sistema debe cumplir.
+Los bloques son componentes del sistema, y las flechas representan dependencias lógicas entre el estado de los componentes y el estado del sistema en su totalidad.
+Su propósito es evaluar y analizar la confiabilidad del esquema, e.g, probabilidad de fallo, entre otras métricas de interés en sistemas de misión crítica.
+
+En la \autoref{fig:ejemplo_rbd_simple}, podemos visualizar un ejemplo sencillo de RBD. Este modela un satélite tomando fotos a tierra y enviándolos a una estación terrestre a través de una antena. Nótese que hay dos nodos extra que no fueron mencionados: \start\ y \nd. Estos son nodos estructurales que representan entrada/salida con respecto al flujo de funcionamiento del sistema, por lo tanto, siempre tenemos exactamente dos. 
+Es relevante resaltar que los RBDs son un enfoque lógico dual con respecto a los ampliamente estudiados \gls{FTs}. Mientras los FTs modelan el fallo del sistema como función del fallo de sus componentes, un RBD modela el éxito del sistema como función del éxito de sus componentes.
 
 
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{04_rbd/figures/2component_sat.pdf}
+    \caption{Satélite que toma fotos y las envía a tierra a través de la antena.}
+    \label{fig:ejemplo_rbd_simple}
+\end{figure}
 
+Como se observa, un RBD es en esencia un \gls{DAG} con algunas restricciones adicionales. La semántica está dada por los caminos existentes entre \start\ y \nd. Cada camino representa una manera distinta en la que el sistema alcanza el éxito. En consecuencia, diremos que el sistema funciona mientras exista un camino entre los nodos de entrada/salida. Asumimos que, si un componente deja de funcionar, el nodo correspondiente desaparece del grafo. Es fácil ver en el ejemplo, que si la antena se rompe, no existen caminos que alcancen /nd/, por ende conlleva a la falla del sistema. 
 
 A \textit{directed graph} $G$ is a tuple $(V,E)$ where $V$ is a set of vertices and $E \subseteq V \times V$ is a set of ordered pairs. Given a graph $\graph$, a \textit{walk} is a sequence of vertices $\walk$ such that $\forall i: 1 \le i \le n-1 : (v_i, v_{i+1}) \in E$. If all vertices are distinct, a walk is called a \textit{path}. A \textit{cycle} is a walk where the only repeated vertices are $v_1=v_k$. A \textit{DAG (Directed Acyclic Graph)} is a directed graph that has no cycles.
 
