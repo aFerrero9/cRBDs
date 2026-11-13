@@ -1,6 +1,6 @@
 \chapter{Diagramas de Bloques de Confiabilidad (RBDs)}
 \label{chapter:rbd}
-En este capítulo se introduce el modelo matemático sobre el cual yace este trabajo. 
+En este capítulo se introduce el modelo matemático sobre el cual yace este trabajo. En \ref{sec:rbd_prelim} se introduce el concepto de RBD y se despliegan los preliminares necesarios.
 En \ref{sec:rbd_definicion} se establece la definición formal de \gls{RBD} (\textit{Reliability Block Diagram}). 
 En \ref{sec:rbd_semantica} se describen definiciones de carácter semántico, como \textit{path} y \textit{cut set}. 
 Luego, en \ref{sec:rbd_composiciones} se determinan los operadores del modelo: composición en serie y en paralelo.
@@ -10,14 +10,12 @@ Posteriormente, en el siguiente capítulo, se definirá, en términos de RBDs, l
 
 \section{Preliminares}
 \label{sec:rbd_prelim}
-Previo al desarrollo de la definición formal de RBD, veamos los antecedentes teóricos necesarios.
-Antes de ahondar en la matemática, abordemos el concepto de RBD. 
-Dado un sistema industrial, un Diagrama de Bloques de Confiabilidad modela el flujo de éxito del mismo. 
-Es una representación gráfica de alto nivel, y es usado para modelar una o varias tareas que el sistema debe cumplir.
+Para comprender la definición formal de los RBD, primero revisaremos sus antecedentes teóricos y abordaremos el concepto de manera intuitiva, antes de profundizar en la matemática.
+Dado un sistema industrial, un \textit{Diagrama de Bloques de Confiabilidad} (RBD) es una representación gráfica de alto nivel, usado para modelar el flujo de éxito del mismo, a través de una o varias tareas que el sistema debe cumplir.
 Los bloques son componentes del sistema, y las flechas representan dependencias lógicas entre el estado de los componentes y el estado del sistema en su totalidad.
 Su propósito es evaluar y analizar la confiabilidad del esquema, e.g, probabilidad de fallo, entre otras métricas de interés en sistemas de misión crítica.
 
-En la \autoref{fig:ejemplo_rbd_simple}, podemos visualizar un ejemplo sencillo de RBD. Este modela un satélite tomando fotos a tierra y enviándolos a una estación terrestre a través de una antena. Nótese que hay dos nodos extra que no fueron mencionados: \start\ y \nd. Estos son nodos estructurales que representan entrada/salida con respecto al flujo de funcionamiento del sistema, por lo tanto, siempre tenemos exactamente dos. 
+En la \autoref{fig:ejemplo_rbd_simple}, podemos visualizar un ejemplo sencillo de RBD. Este modela un satélite que toma y envía fotos a una estación terrestre a través de una antena. Nótese que hay dos nodos extra que no fueron mencionados: \start\ y \nd. Estos son nodos estructurales que representan entrada/salida con respecto al flujo de funcionamiento del sistema, por lo tanto, siempre tenemos exactamente dos. 
 Es relevante resaltar que los RBDs son un enfoque lógico dual con respecto a los ampliamente estudiados \gls{FTs}. Mientras los FTs modelan el fallo del sistema como función del fallo de sus componentes, un RBD modela el éxito del sistema como función del éxito de sus componentes.
 
 
@@ -28,23 +26,45 @@ Es relevante resaltar que los RBDs son un enfoque lógico dual con respecto a lo
     \label{fig:ejemplo_rbd_simple}
 \end{figure}
 
-Como se observa, un RBD es en esencia un \gls{DAG} con algunas restricciones adicionales. La semántica está dada por los caminos existentes entre \start\ y \nd. Cada camino representa una manera distinta en la que el sistema alcanza el éxito. En consecuencia, diremos que el sistema funciona mientras exista un camino entre los nodos de entrada/salida. Asumimos que, si un componente deja de funcionar, el nodo correspondiente desaparece del grafo. Es fácil ver en el ejemplo, que si la antena se rompe, no existen caminos que alcancen /nd/, por ende conlleva a la falla del sistema. 
+Como se observa, un RBD es en esencia un \gls{DAG} con una restricción de conectividad adicional (ver \ref{sec:rbd_definicion}). La semántica está dada por los caminos existentes entre \start\ y \nd. Cada camino representa una manera distinta en la que el sistema alcanza el éxito. En consecuencia, diremos que el sistema funciona mientras exista un camino entre los nodos de entrada/salida. Asumimos que, si un componente deja de funcionar, el nodo correspondiente desaparece del grafo. Es fácil ver en el ejemplo que, si la antena se rompe, no existen caminos que alcancen \nd\, por ende conlleva a la falla del sistema. Habiendo abordado el concepto, veamos las definiciones matemáticas necesarias previo a la formalización de los RBDs.
 
-A \textit{directed graph} $G$ is a tuple $(V,E)$ where $V$ is a set of vertices and $E \subseteq V \times V$ is a set of ordered pairs. Given a graph $\graph$, a \textit{walk} is a sequence of vertices $\walk$ such that $\forall i: 1 \le i \le n-1 : (v_i, v_{i+1}) \in E$. If all vertices are distinct, a walk is called a \textit{path}. A \textit{cycle} is a walk where the only repeated vertices are $v_1=v_k$. A \textit{DAG (Directed Acyclic Graph)} is a directed graph that has no cycles.
+Un \textit{grafo dirigido} $G$ es una tupla $(V,E)$ donde $V$ es un conjunto de vértices y $E \subseteq V \times V$ es un conjunto de pares ordenados. Dado un grafo $\graph$, un \textit{recorrido} es una secuencia de vértices $\walk$ tal que $\forall i: 1 \le i \le k-1 : (v_i, v_{i+1}) \in E$. Si todos los vértices de la secuencia son distintos, el recorrido recibe el nombre de \textit{camino}. Un \textit{ciclo} es un recorrido en el cual los únicos vértices que se repiten son el inicial y el final ($v_1=v_k$). Por su parte, un \textit{\gls{DAG}} (Grafo Dirigido Acíclico, por sus siglas en inglés) es un grafo dirigido que no contiene ciclos.
 
-Given a graph $\graph$ and a subset of nodes $X \subseteq V$, the \textit{induced graph} $\indgraph{X}$ is defined as: 
+Una notación que nos será útil se especifica a continuación: Dado un grafo $\graph$ y un subconjunto de nodos $X \subseteq V$ definiremos el \textit{grafo inducido} $\indgraph{X}$ como:
 %
 \[\indgraph{X} = (X, E \cap (X \times X)).\]
 
-
-
 \section{RBD: Definición formal}
 \label{sec:rbd_definicion}
-\completar{Definición de RBD como grafo dirigido acíclico (DAG) con nodos terminales \start y \nd.}
+Veamos ahora la definción formal de RBD. Dentro de la misma, encontramos dos particularidades: 
+En primer lugar, tenemos una partición en el conjunto de nodos, $V = V_f \uplus V_n$. Esta decisión fue tomada para facilitar definiciones posteriores a la hora de darle semántica a los RBDs. Aquí, $\uplus$ representa la unión disjunta, puntualizando que ambos conjuntos no comparten elementos. $V_f$ contiene todos los nodos "funcionales" del sistema, es decir, todos los nodos del grafo excepto \start\ y \nd. Consecuentemente, $V_n = \{\start, \nd\}$ representa los nodos no funcionales (también los llamaremos estructurales).
+
+La segunda particularidad es la última restricción, que caracteriza la conectividad del grafo. Esta es muy importante para la consistencia del modelo: requerimos que no existan nodos aislados, es decir, cada nodo debe pertenecer a un camino entre \start\ y \nd. En consecuencia, estos últimos dos hacen de fuente y sumidero, respectivamente.
+
+\begin{definition}[Diagrama de Bloques de Confiabilidad - RBD]
+Un \textit{RBD} para un sistema $S$ es una 3-upla $\rbd$ tal que:
+\begin{itemize}
+    \item $\graph$ es un \textit{DAG}, donde $V = V_f \uplus V_n$
+    \item $\start, \nd \in V_n$
+    \item $\forall v \in V_f : (\start, v) \in E^+ \land (v, \nd) \in E^+$
+\end{itemize}
+\end{definition}
+
+$E^+$ es la clausura transitiva sobre el conjunto de aristas, y lo definimos como sigue: $(x,y) \in E^+$ si existen $ z_0, \ldots, z_k$ para $k>0$ tal que $x=z_0$, $y=z_k$, y $(z_i,z_{i+1}) \in E$ para todo $0\leq i<k$.
+
 
 \section{Semántica}
 \label{sec:rbd_semantica}
-\completar{Semántica de conectividad, estados de los componentes y función de estructura / probabilidad de supervivencia.}
+Tal como fue mencionado en la sección preliminar, la semántica de los RBDs está dada por los caminos. Analicemos otro ejemplo simple, un sistema de bombeado de un fluído (ver \autoref{fig:simplePump}). Aquí encontramos algo novedoso hasta el momento: la redundancia, representada a través de la topología en paralelo. Ahora, el sistema puede concretar la tarea de suministro del fluído de 2 maneras distintas, a través de la \textit{BombaA} o de la \textit{BombaB}. De este modo, si la \textit{BombaA} falla, el bombeo sigue siendo exitoso via \textit{BombaB}, y viceversa. Al mismo tiempo, observemos que el fallo de la \textit{Válvula} desencadena el fallo total del sistema dado que es única, independientemente de la redundancia propuesta en el primer componente.
+Los componentes tienen intrínsecamente un estado binario \textit{up/down}. Este estado es utilizado para identificar si el componente está en estado de falla (down) o funcionando correctamente (up).
+
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{04_rbd/figures/simplePump.pdf}
+    \caption{Sistema de bombeo redundante con válvula de control}
+    \label{fig:simplePump}
+\end{figure}
 
 \section{Composiciones}
 \label{sec:rbd_composiciones}
