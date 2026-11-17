@@ -3,7 +3,7 @@
 En este capítulo se introduce el modelo matemático sobre el cual yace este trabajo. En \ref{sec:rbd_prelim} se introduce el concepto de RBD y se despliegan los preliminares necesarios.
 En \ref{sec:rbd_definicion} se establece la definición formal de \gls{RBD} (\textit{Reliability Block Diagram}). 
 En \ref{sec:rbd_semantica} se describen definiciones de carácter semántico, como \textit{path} y \textit{cut set}. 
-Luego, en \ref{sec:rbd_composiciones} se determinan los operadores del modelo: composición en serie y en paralelo.
+Luego, en \ref{sec:rbd_operadores} se determinan los operadores del modelo: composición en serie y en paralelo.
 Por último, se enuncia y demuestra una proposición que asegura que el modelo es composicional. Adicionalmente,
 a lo largo del capítulo, se justifican algunas decisiones de diseño y restricciones importantes del modelo.
 Posteriormente, en el siguiente capítulo, se definirá, en términos de RBDs, los RBD coloreados, que permiten extender la expresividad del modelo para que, además de composicional, sea cerrado bajo operadores y modular.
@@ -30,19 +30,16 @@ Como se observa, un RBD es en esencia un \gls{DAG} con una restricción de conec
 
 Un \textit{grafo dirigido} $G$ es una tupla $(V,E)$ donde $V$ es un conjunto de vértices y $E \subseteq V \times V$ es un conjunto de pares ordenados. Dado un grafo $\graph$, un \textit{recorrido} es una secuencia de vértices $\walk$ tal que $\forall i: 1 \le i \le k-1 : (v_i, v_{i+1}) \in E$. Si todos los vértices de la secuencia son distintos, el recorrido recibe el nombre de \textit{camino}. Un \textit{ciclo} es un recorrido en el cual los únicos vértices que se repiten son el inicial y el final ($v_1=v_k$). Por su parte, un \textit{\gls{DAG}} (Grafo Dirigido Acíclico, por sus siglas en inglés) es un grafo dirigido que no contiene ciclos.
 
-Una notación que nos será útil se especifica a continuación: Dado un grafo $\graph$ y un subconjunto de nodos $X \subseteq V$ definiremos el \textit{grafo inducido} $\indgraph{X}$ como:
-%
-\[\indgraph{X} = (X, E \cap (X \times X)).\]
 
 \section{RBD: Definición formal}
 \label{sec:rbd_definicion}
-Veamos ahora la definción formal de RBD. Dentro de la misma, encontramos dos particularidades: 
-En primer lugar, tenemos una partición en el conjunto de nodos, $V = V_f \uplus V_n$. Esta decisión fue tomada para facilitar definiciones posteriores a la hora de darle semántica a los RBDs. Aquí, $\uplus$ representa la unión disjunta, puntualizando que ambos conjuntos no comparten elementos. $V_f$ contiene todos los nodos "funcionales" del sistema, es decir, todos los nodos del grafo excepto \start\ y \nd. Consecuentemente, $V_n = \{\start, \nd\}$ representa los nodos no funcionales (también los llamaremos estructurales).
+Veamos ahora la definición formal de RBD. Dentro de la misma, encontramos dos particularidades: 
+En primer lugar, tenemos una partición en el conjunto de nodos, $V = V_f \uplus V_n$. Esta decisión fue tomada para facilitar definiciones posteriores a la hora de darle semántica a los RBDs. $\uplus$ representa la unión disjunta, puntualizando que ambos conjuntos no comparten elementos. $V_f$ contiene todos los nodos \textit{funcionales} del sistema, es decir, todos los nodos del grafo excepto \start\ y \nd. Consecuentemente, $V_n = \{\start, \nd\}$ representa los nodos no funcionales (también los llamaremos estructurales).
 
 La segunda particularidad es la última restricción, que caracteriza la conectividad del grafo. Esta es muy importante para la consistencia del modelo: requerimos que no existan nodos aislados, es decir, cada nodo debe pertenecer a un camino entre \start\ y \nd. En consecuencia, estos últimos dos hacen de fuente y sumidero, respectivamente.
 
 \begin{definition}[Diagrama de Bloques de Confiabilidad - RBD]
-Un \textit{RBD} para un sistema $S$ es una 3-upla $\rbd$ tal que:
+Un \textit{RBD} para un sistema $S$ es una tupla $\rbd$ tal que:
 \begin{itemize}
     \item $\graph$ es un \textit{DAG}, donde $V = V_f \uplus V_n$
     \item $\start, \nd \in V_n$
@@ -50,14 +47,14 @@ Un \textit{RBD} para un sistema $S$ es una 3-upla $\rbd$ tal que:
 \end{itemize}
 \end{definition}
 
-$E^+$ es la clausura transitiva sobre el conjunto de aristas, y lo definimos como sigue: $(x,y) \in E^+$ si existen $ z_0, \ldots, z_k$ para $k>0$ tal que $x=z_0$, $y=z_k$, y $(z_i,z_{i+1}) \in E$ para todo $0\leq i<k$.
+$E^+$ es la clausura transitiva sobre el conjunto de aristas, y lo definimos como sigue: $(x,y) \in E^+$ si existen $ z_0, \ldots, z_k$ para $k>0$ tal que $x=z_0$, $y=z_k$, y $(z_i,z_{i+1}) \in E$ para todo $0\leq i<k$. 
+
+Por simplicidad en la notación, en el resto del documento utilizaremos $S$ para referirnos indistintamente tanto al sistema físico como a su respectivo modelo RBD. Cuando decimos 'un RBD para un sistema $S$' estamos frente a un abuso de notación, el cual cometemos deliberadamente para identificar al sistema físico de su modelo matemático subyacente.
 
 
 \section{Semántica}
 \label{sec:rbd_semantica}
-Tal como fue mencionado en la sección preliminar, la semántica de los RBDs está dada por los caminos. Analicemos otro ejemplo simple, un sistema de bombeado de un fluído (ver \autoref{fig:simplePump}). Aquí encontramos algo novedoso hasta el momento: la redundancia, representada a través de la topología en paralelo. Ahora, el sistema puede concretar la tarea de suministro del fluído de 2 maneras distintas, a través de la \textit{BombaA} o de la \textit{BombaB}. De este modo, si la \textit{BombaA} falla, el bombeo sigue siendo exitoso via \textit{BombaB}, y viceversa. Al mismo tiempo, observemos que el fallo de la \textit{Válvula} desencadena el fallo total del sistema dado que es única, independientemente de la redundancia propuesta en el primer componente.
-Los componentes tienen intrínsecamente un estado binario \textit{up/down}. Este estado es utilizado para identificar si el componente está en estado de falla (down) o funcionando correctamente (up).
-
+Tal como fue mencionado en la sección preliminar, la semántica de los RBDs está dada por los caminos. Para entender que significa esto, analicemos otro ejemplo simple, un sistema de bombeado de un fluído (\autoref{fig:simplePump}). Aquí encontramos algo novedoso hasta el momento: la redundancia, representada a través de la topología en paralelo. Ahora, el sistema puede concretar la tarea de suministro del fluído de 2 maneras distintas, a través de la \textit{BombaA} o de la \textit{BombaB}. De este modo, si la \textit{BombaA} falla, el bombeo sigue siendo exitoso vía \textit{BombaB}, y viceversa. Al mismo tiempo, observemos que el fallo de la \textit{Válvula} desencadena el fallo total del sistema dado que es única, independientemente de la redundancia propuesta en el primer componente. Visto esto, afirmamos que el funcionamiento del sistema se traduce en la disponibilidad de caminos en el grafo.
 
 \begin{figure}[htbp]
     \centering
@@ -66,6 +63,118 @@ Los componentes tienen intrínsecamente un estado binario \textit{up/down}. Este
     \label{fig:simplePump}
 \end{figure}
 
-\section{Composiciones}
-\label{sec:rbd_composiciones}
-\completar{Operaciones de composición (serie, paralelo, puente / grafos arbitrarios).}
+En nuestro modelo, los componentes asumen un estado binario: en funcionamiento (\textit{up}) o en falla (\textit{down}). En términos del grafo, diremos que un nodo se encuentra \textit{up} si el componente físico al que representa es capaz de llevar a cabo su tarea asignada. Si bien esto no tiene un papel clave en la matemática, ya que el análisis a lo largo del trabajo será puramente estático (todo componente está \textit{up}) es una noción importante para contribuir al dominio del concepto de RBD. Por otra parte, esto allana el terreno para agregarle dinámica al sistema en un futuro, mediante componentes fallando y cambiando de estado.
+
+Una notación que nos será útil se especifica a continuación: dado un grafo $\graph$ y un subconjunto de nodos $X \subseteq V$ definiremos el \textit{grafo inducido} $\indgraph{X}$ como:
+%
+\[\indgraph{X} = (X, E \cap (X \times X)).\]
+Además, dado $X \subseteq V_f$, asumiremos implícitamente lo siguiente para simplificar la notación: $\indgraph{X} = \indgraph{X \cup \{\start, \nd\}}$
+
+Veamos la formalización de lo abordado hasta el momento. Dado un grafo $\rgraph$ de un RBD para el sistema $S$, definimos lo siguiente:
+
+\begin{definition}[Estado de un RBD]
+    Un \textit{estado} $\sigma \subseteq V_f$ de un RBD denota un subconjunto de componentes que se encuentran actualmente en estado \textit{up}. 
+\end{definition}
+
+\begin{definition}[Path Set]
+    Sea $\sigma$ un estado de un RBD. $\sigma$ se considera un \textit{path set} si y solo si existe un camino $\pi = \walk$ en $\indgraph{\sigma}$ tal que $v_1 = \start$ y $v_k = \nd$. Un \textit{path set} $\sigma$ es \textit{minimal} si y solo si $\forall \sigma^\prime \text{ \textit{path set}} : \sigma^\prime \subseteq \sigma \implies \sigma^\prime = \sigma$.
+\end{definition}
+
+%\begin{definition}[RBD Operativo]
+%    Diremos que el sistema $S$ está \textit{operativo} si y solo si existe al menos un \textit{path set} $\sigma$ sobre el grafo $G$ subyacente al RBD $S$.
+%\end{definition}
+
+Utilizamos $\pig$ para denotar a todos los \textit{path sets} en $G$. $\pig^{min}$ denota todos los \textit{path sets minimales} en $G$.
+Por ello, cabe destacar que pueden existir múltiples \textit{path sets} distintos dentro de un mismo RBD. Cada \textit{path set} puede interpretarse como un mecanismo distinto mediante el cual el sistema logra cumplir su función prevista. Aún así, la definición nos permite tener \textit{path sets} menos intuitivos: dado un \textit{path set} minimal, cualquier otro nodo que agreguemos constructivamente, será un \textit{path set}. Luego de la siguiente definición, que constituye el análogo de los path sets, veremos un ejemplo en la \autoref{fig:ej_rbd_semantica} para reforzar los conceptos.
+
+\begin{definition}[Cut Set]
+$K \subseteq V_f$ es un \textit{cut set} si y solo si $K^\complement$ no es un \textit{path set}. Un \textit{cut set} $K$ es \textit{minimal} si y solo si $\forall K^\prime \text{ \textit{cut set}} : K^\prime \subseteq K \implies K^\prime = K$.
+\end{definition}
+
+Aquí $K^\complement$ es el complemento de $K$. Esta definición se establece en términos de \textit{path set}. Si queremos usar otra definición más directa, (i.e. más útil para pruebas) podemos emplear la siguiente: 
+$K \subseteq V_f$ es un \textit{cut set} si y solo si $\pigp{\indgraph{K^\complement}} = \emptyset$.
+Utilizamos $\kutp{G}$ para denotar a todos los \textit{cut sets} en $G$. $\kutp{G}^{min}$ denota todos los \textit{cut sets minimales} en $G$.
+
+Intuitivamente, un \textit{cut set} es un subconjunto de componentes (en estado de falla) tal que desencadenan en la falla total del sistema. A nivel topológico, $K \subseteq V_f$ es un \textit{cut set} si, al quitar los nodos $K$ del grafo $G$, no existen caminos entre \start\ y \nd\ que le permitan al sistema concretar su misión. 
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\textwidth]{04_rbd/figures/ej_rbd_semantica.pdf}
+    \caption{Satélite A con redundancia en antena vía Satélite B}
+    \label{fig:ej_rbd_semantica}
+\end{figure}
+
+En este ejemplo \ref{fig:ej_rbd_semantica}, vemos una versión mejorada del estudiado en \ref{fig:ejemplo_rbd_simple}. Ahora, el \textit{satélite A} se puede comunicar con otro satélite B a través de un láser, en caso de que su propia antena falle y de esta manera utilizar la antena de B como relevo para enviar las imágenes a tierra.
+
+Notemos que $\sigma = V_f$ es un \textit{path set} pero también $K = V_f$ es un \textit{cut set}. Esto puede sonar poco convencional, sin embargo, este caso trivial nunca nos compete, pues siempre los conjuntos de interés serán los minimales. Ahora,
+\[
+\begin{aligned}
+\pig^{min} = \bigl\{
+&\{\text{camaraA}, \text{antenaA}\},\\
+&\{\text{camaraA}, \text{laserA}, \text{laserB}, \text{antenaB}\}
+\bigr\}
+\end{aligned}
+\]
+son los \textit{path sets minimales} del sistema. Observemos que 
+
+$\sigma' = \{\text{camaraA}, \text{antenaA}, \text{laserB}\}$
+es un \textit{path set} no minimal.
+En contraste,
+\[
+\begin{aligned}
+\kutp{G}^{min} = \bigl\{&
+  \{\text{camaraA}\}, \{\text{laserA}, \text{antenaA}\},\\
+& \{\text{laserB}, \text{antenaA}\}, \{\text{antenaB}, \text{antenaA}\}
+\bigr\}
+\end{aligned}
+\]
+son los \textit{cut sets minimales} del sistema. No obstante, $K' = \{\text{camaraA}, \text{laserB}\}$ es un \textit{cut set} no minimal.
+
+Los conceptos de conjuntos de corte y caminos, que refieren a un análisis cualitativo del modelo, son de particular interés en confiabilidad, ya que a través de los conjuntos minimales de los mismos es posible obtener una cota de la probabilidad de fallo/éxito del sistema. (citar libro Modarres)
+\section{Operadores}
+\label{sec:rbd_operadores}
+Antes de determinar los dos operadores de RBDs: la composición en serie y en paralelo, veamos una notación que usaremos en las definiciones.
+Sea $G[u \leftarrow v]$ el grafo obtenido al renombrar el nodo $u$ por el nodo $v$ en $G$, de manera tal que todas las aristas originalmente incidentes en $u$ sean reasignadas a $v$. Para denotar una secuencia de operaciones de renombrado, escribimos $G[u_1 \leftarrow v_1][u_2 \leftarrow v_2] \dots [u_k \leftarrow v_k]$. Asimismo, podemos renombrar múltiples nodos simultáneamente por un mismo nodo $v$ mediante la notación $G[u_1, \dots, u_n \leftarrow v]$.
+
+Es importante mencionar que la sustitución arbitraria de nodos puede introducir ciclos en el grafo de manera inadvertida. Por consiguiente, procedemos con estricta precaución durante el proceso de sustitución para preservar la propiedad acíclica de los RBD.
+A continuación, definimos dos tipos de composición bajo restricciones específicas. Estas restricciones son necesarias porque una composición arbitraria podría introducir ciclos, lo cual resultaría en un RBD inválido.
+
+Sean $\graphp{A}$, $\graphp{B}$ los grafos subyacentes de los RBD $\rbdp{A}$, $\rbdp{B}$ para los sistemas $A$ y $B$, respectivamente.
+
+\begin{definition}[Composición en Paralelo de RBD]
+    Definimos la composición en paralelo de los grafos subyacentes como:
+    %
+    \[G_{||} = (V_A \cup V_B, E_A \cup E_B)[\start_A, \start_B \leftarrow \start][\nd_A, \nd_B \leftarrow \nd]\]
+
+    Luego, la \textit{composición en paralelo} de los sistemas $A$ y $B$ puede definirse como:
+\[
+    \rbdp{A} || \rbdp{B} = (G_{||} , \start, \nd)
+\]
+\end{definition}
+
+(AGREGAR EJEMPLO)
+Notemos que, en este tipo de composición, podría introducirse un ciclo. Por ejemplo, si tenemos $(u,v) \in E_A$ y $(v,u) \in E_B$ con $u \neq v$, entonces la composición en paralelo no resulta ser un RBD válido. 
+
+Esto va en dirección opuesta de ciertas propiedades de expresividad que nos interesa probar sobre el modelo, como por ejemplo, la \textit{clausura operacional}. Una manera trivial de garantizar que la composición se mantenga como un RBD válido, para cumplir esta propiedad, es exigir que los conjuntos de nodos sean estrictamente disjuntos. Sin embargo, esta restricción limita la expresividad del modelo, imposibilitando la representación de sistemas complejos e interconectados, pues la propiedad de \textit{composicionalidad} no se cumple. Esta última sostiene que cualquier RBD puede ser construido como una secuencia de composiciones en serie y paralelo. Al exigir nodos disjuntos, el famoso ejemplo del puente (CITAR) es suficiente para probar el no cumplimiento de la propiedad.
+
+Estas problemáticas constituyen la motivación principal para introducir los RBD coloreados (cRBD), los cuales desarrollaremos en el próximo capítulo.
+
+\begin{definition}[Composición en Serie de RBD]
+    Dado ${V_f}_A \cap {V_f}_B = \emptyset$, definimos en primer lugar la composición en serie de los grafos subyacentes. Sean:
+    \begin{align*}
+    E_{;} =& \big(E_A \setminus (V_A \times \{\nd_A\})\big) \cup \big(E_B \setminus (\{\start_B\} \times V_B)\big) \\
+           & \cup \{u \in V_A \mid (u,\nd_A) \in E_A\} \times \{v \in V_B \mid (\start_B,v) \in E_B\} \\
+    V_{;} =& (V_A \cup V_B) \setminus \{\nd_A, \start_B\} 
+    \end{align*}
+    Entonces, el grafo compuesto se define como:
+    \[
+        G_; = (V_;, E_{;})[\start_A \leftarrow \start][\nd_B \leftarrow \nd]
+    \]
+    Finalmente, la \textit{composición en serie} de los sistemas $A$ y $B$ se define como:
+    \[
+        \rbdp{A} ; \rbdp{B} = (G_; , \start, \nd)
+    \]
+\end{definition}
+
+(AGREGAR EJEMPLO)
+A diferencia de la composición en paralelo, la composición en serie exige que los sistemas no compartan componentes internos (i.e., se requiere estrictamente que ${V_f}_A \cap {V_f}_B = \emptyset$). Esta restricción es indispensable para preservar la estructura semántica correcta de una ejecución secuencial. Además, la construcción de los conjuntos $V_{;}$ y $E_{;}$ está diseñada específicamente para eliminar los nodos de transición intermedios ($\nd_A$ y $\start_B$) que, de otro modo, permanecerían en el grafo. En lugar de fusionarlos en un único nodo intermedio que actúe como cuello de botella, esta operación conecta directamente los predecesores en $A$ con los sucesores en $B$, asegurando un flujo estructural continuo entre ambos sistemas.
