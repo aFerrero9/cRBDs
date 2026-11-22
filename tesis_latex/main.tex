@@ -1,8 +1,9 @@
 \documentclass[spanish,a4paper,oneside,12pt,openright]{book}
 \usepackage{graphicx}
-\usepackage{amsmath,amsfonts,amssymb}
+\usepackage{amsmath,amsfonts,amssymb, amsthm}
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
+\usepackage{lmodern}
 %TNRoman:
 %\usepackage{newtxtext,newtxmath}
 %Arial-Helvetica:
@@ -38,6 +39,7 @@
 \usepackage{tcolorbox}
 \usepackage{listings}
 \usepackage{datetime}
+\usepackage{subcaption}
 
 \newcommand{\capitalmonthname}[1]{%
   \ifcase#1\or
@@ -61,6 +63,8 @@
 {\end{adjustwidth}}
 
 \newtheorem{definition}{Definición}
+\newtheorem{proposition}{Proposición}
+\newtheorem{lemma}{Lema}
 
 \renewcommand{\listalgorithmname}{Índice de Algoritmos}
 
@@ -241,7 +245,7 @@ Universidad o Institución.
 \input{./03_intro/intro.tex} \cleardoublepage
 
 % =============================================================================
-\part{Extendiendo la expresividad de los Diagramas de Bloques de Confiabilidad}
+\part{Sintaxis y semántica de los RBD - cRBD}
 \label{part:modelado}
 % =============================================================================
 
