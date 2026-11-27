@@ -5,15 +5,15 @@ En \ref{sec:rbd_definicion} se establece la definición formal de \gls{RBD} (\te
 En \ref{sec:rbd_semantica} se describen definiciones de carácter semántico, como \textit{path} y \cset. 
 Luego, en \ref{sec:rbd_operadores} se determinan los operadores del modelo: composición en serie y en paralelo.
 Por último, se enuncia y demuestra una proposición que asegura que el modelo es composicional. Adicionalmente,
-a lo largo del capítulo, se justifican algunas decisiones de diseño y restricciones importantes del modelo.
-Posteriormente, en el siguiente capítulo, se definirá, en términos de RBDs, los RBD coloreados, que permiten extender la expresividad del modelo para que, además de composicional, sea cerrado bajo operadores y modular.
+a lo largo del capítulo, se justifican ciertas decisiones de diseño y restricciones fundamentales del modelo, como así también se abordan las problemáticas intrínsecas del mismo.
+Posteriormente, en el siguiente capítulo, se definirá, en términos de RBDs, los RBD coloreados, que permiten extender la expresividad del modelo para que, además de composicional, sea cerrado bajo operadores y modular. De esta manera, se solucionarán las problemáticas estudiadas a lo largo de este capítulo.
 
 \section{Preliminares}
 \label{sec:rbd_prelim}
-Para comprender la definición formal de los RBD, primero revisaremos sus antecedentes teóricos y abordaremos el concepto de manera intuitiva, antes de profundizar en la matemática.
+Para comprender la definición formal de los RBD, antes de profundizar en la matemática, primero abordemos el concepto de manera intuitiva y revisemos sus antecedentes teóricos.
 Dado un sistema industrial, un \textit{Diagrama de Bloques de Confiabilidad} (RBD) es una representación gráfica de alto nivel, usado para modelar el flujo de éxito del mismo, a través de una o varias tareas que el sistema debe cumplir.
 Los bloques son componentes del sistema, y las flechas representan dependencias lógicas entre el estado de los componentes y el estado del sistema en su totalidad.
-Su propósito es evaluar y analizar la confiabilidad del esquema, e.g, probabilidad de fallo, entre otras métricas de interés en sistemas de misión crítica.
+Su propósito es evaluar y analizar la confiabilidad del esquema, e.g, probabilidad de fallo, entre otras métricas de interés en sistemas de misión crítica. Más aún, estos diagramas son una herramienta que permite encontrar vulnerabilidades, detectar componentes críticos y evaluar el impacto real de las modificaciones en etapas tempranas del desarrollo. Al ofrecer una representación clara y formal de la lógica operativa del sistema, los RBD permiten analizar la arquitectura en mayor profundidad y sirven como base para guiar decisiones de diseño y asignación de recursos.
 
 En la \autoref{fig:ejemplo_rbd_simple}, podemos visualizar un ejemplo sencillo de RBD. Este modela un satélite que toma y envía fotos a una estación terrestre a través de una antena. En relación a lo mencionado en el párrafo anterior, la \componente{antena} depende de que la \componente{cámara} funcione para concretar su trabajo. Esta dependencia entre componentes se manifiesta por la estructura en serie del modelo.
 
@@ -36,7 +36,7 @@ Un \textit{grafo dirigido} $G$ es una tupla $(V,E)$ donde $V$ es un conjunto de 
 \section{RBD: Definición formal}
 \label{sec:rbd_definicion}
 Veamos ahora la definición formal de RBD. Dentro de la misma, encontramos dos particularidades: 
-En primer lugar, tenemos una partición en el conjunto de nodos, $V = V_f \uplus V_n$. Esta decisión fue tomada para facilitar definiciones posteriores a la hora de darle semántica a los RBD. $\uplus$ representa la unión disjunta, puntualizando que ambos conjuntos no comparten elementos. $V_f$ contiene todos los nodos \textit{funcionales} del sistema, es decir, todos los nodos del grafo excepto \start\ y \nd. Consecuentemente, $V_n = \{\start, \nd\}$ representa los nodos no funcionales (también los llamaremos estructurales).
+En primer lugar, tenemos una partición en el conjunto de nodos, $V = V_f \uplus V_n$. Esta decisión fue tomada para facilitar definiciones posteriores a la hora de darle semántica a los RBD. $\uplus$ representa la unión disjunta, puntualizando que ambos conjuntos no comparten elementos. $V_f$ contiene todos los nodos \textit{funcionales} del sistema, esto es, todos los nodos del grafo excepto \start\ y \nd. Consecuentemente, $V_n = \{\start, \nd\}$ representa los nodos no funcionales (también los llamaremos \textit{estructurales}).
 
 La segunda particularidad es la última restricción, que caracteriza la conectividad del grafo. Esta es muy importante para la consistencia del modelo: requerimos que no existan nodos aislados, es decir, cada nodo debe pertenecer a un camino entre \start\ y \nd. En consecuencia, estos últimos dos hacen de fuente y sumidero, respectivamente.
 
@@ -87,17 +87,17 @@ Veamos la formalización de lo abordado hasta el momento. Dado el grafo $\rgraph
 %\end{definition}
 
 Utilizamos $\pig$ para denotar a todos los \psets\ en $G$. $\pig^{min}$ denota todos los \textit{path sets minimales} en $G$.
-Por ello, cabe destacar que pueden existir múltiples \psets\ distintos dentro de un mismo RBD. Cada \pset\ puede interpretarse como un mecanismo distinto mediante el cual el sistema logra cumplir su función prevista. Aún así, la definición nos permite tener \psets\ menos intuitivos: dado un \pset\ minimal, cualquier otro nodo que agreguemos constructivamente, será un \pset. Luego de la siguiente definición, que constituye el análogo de los path sets, veremos un ejemplo en la \autoref{fig:ej_rbd_semantica} para reforzar los conceptos.
+Por ello, cabe destacar que pueden existir múltiples path sets distintos dentro de un mismo RBD. Cada path set puede interpretarse como un mecanismo distinto mediante el cual el sistema logra cumplir su función prevista. Aún así, la definición nos permite tener path sets menos intuitivos: dado un path set minimal, cualquier otro nodo que agreguemos constructivamente, será un path set. Luego de la siguiente definición, que constituye la contraparte de los path sets, veremos un ejemplo en la \autoref{fig:ej_rbd_semantica} para reforzar los conceptos.
 
 \begin{definition}[Cut Set]
-$K \subseteq V_f$ es un \cset\ si y solo si $K^\complement$ no es un \pset. Un \cset\ $K$ es \textit{minimal} si y solo si $\forall K^\prime \text{ \cset} : K^\prime \subseteq K \implies K^\prime = K$.
+$K \subseteq V_f$ es un \cset\ si y solo si $K^\complement$ no es un path set. Un \cset\ $K$ es \textit{minimal} si y solo si $\forall K^\prime \text{ \cset} : K^\prime \subseteq K \implies K^\prime = K$.
 \end{definition}
 
-Aquí $K^\complement$ es el complemento de $K$. Esta definición se establece en términos de \pset. Si queremos usar otra definición más directa, (i.e. más útil para pruebas) podemos emplear la siguiente: 
+Aquí $K^\complement$ es el complemento de $K$. Esta definición se establece en términos de path set. Si queremos usar otra definición más directa, (i.e. más útil para pruebas) podemos emplear la siguiente: 
 $K \subseteq V_f$ es un \cset\ si y solo si $\pigp{\indgraph{K^\complement}} = \emptyset$.
 Utilizamos $\kutp{G}$ para denotar a todos los \csets\ en $G$. $\kutp{G}^{min}$ denota todos los \textit{cut sets minimales} en $G$.
 
-Intuitivamente, un \cset\ es un subconjunto de componentes (en estado de falla) tal que desencadenan en la falla total del sistema. A nivel topológico, $K \subseteq V_f$ es un \cset\ si, al quitar los nodos $K$ del grafo $G$, no existen caminos entre \start\ y \nd\ que le permitan al sistema concretar su misión. 
+Intuitivamente, un cut set es un subconjunto de componentes (en estado de falla) tal que desencadenan en la falla total del sistema. A nivel topológico, $K \subseteq V_f$ es un cut set si, al quitar los nodos $K$ del grafo $G$, no existen caminos entre \start\ y \nd\ que le permitan al sistema concretar su misión. 
 
 \begin{figure}[htbp]
     \centering
@@ -108,7 +108,7 @@ Intuitivamente, un \cset\ es un subconjunto de componentes (en estado de falla) 
 
 En este ejemplo \ref{fig:ej_rbd_semantica}, vemos una versión mejorada del estudiado en \ref{fig:ejemplo_rbd_simple}. Ahora, el satélite A se puede comunicar con otro satélite B a través de un láser en caso de que su propia antena falle, y así utilizar la antena de B como relevo para enviar las imágenes a tierra.
 
-Notemos que $\sigma = V_f$ es un \pset\ pero también $K = V_f$ es un \cset. Esto puede sonar poco convencional, sin embargo, este caso trivial nunca nos compete, pues siempre los conjuntos de interés serán los minimales. Ahora,
+Notemos que $\sigma = V_f$ es un path set pero también $K = V_f$ es un cut set. Esto puede sonar poco convencional, sin embargo, este caso trivial nunca nos compete, pues los conjuntos de interés serán siempre los minimales. Ahora,
 \[
 \begin{aligned}
 \pig^{min} = \bigl\{
@@ -120,7 +120,7 @@ Notemos que $\sigma = V_f$ es un \pset\ pero también $K = V_f$ es un \cset. Est
 son los \textit{path sets minimales} del sistema. Observemos que 
 
 $\sigma' = \{\componente{camaraA}, \componente{antenaA}, \componente{laserB}\}$
-es un \pset\ no minimal.
+es un path set no minimal.
 En contraste,
 \[
 \begin{aligned}
@@ -130,7 +130,7 @@ En contraste,
 \bigr\}
 \end{aligned}
 \]
-son los \textit{cut sets minimales} del sistema. No obstante, $K' = \{\componente{camaraA}, \componente{laserB}\}$ es un \cset\ no minimal.
+son los \textit{cut sets minimales} del sistema. No obstante, $K' = \{\componente{camaraA}, \componente{laserB}\}$ es un cut set no minimal.
 
 Los conceptos de conjuntos de corte y caminos, que refieren a un análisis cualitativo del modelo, son de particular interés en confiabilidad, ya que a través de los conjuntos minimales de los mismos, y la asignación de probabilidades de fallo a los componentes, es posible obtener una cota de la probabilidad de fallo/éxito del sistema. (citar libro Modarres)
 \section{Operadores}
@@ -160,7 +160,7 @@ Consideremos un ejemplo de composición paralela antes de proceder con la formal
         \label{fig:comp_par_b}
     \end{subfigure}
 
-    \vspace{0.5cm} % Separación vertical entre filas
+    \vspace{0.0cm} % Separación vertical entre filas
 
     % Fila inferior: resultado de la composición
     \begin{subfigure}[b]{0.75\textwidth}
@@ -188,12 +188,14 @@ Sean $\graphp{A}$, $\graphp{B}$ los grafos subyacentes de los RBD $\rbdp{A}$, $\
 \]
 \end{definition}
 
-Notemos que, en este tipo de composición, debido a que $A$ y $B$ pueden compartir componentes, podría introducirse un ciclo en el grafo resultante. Por ejemplo, si tenemos $(u,v) \in E_A$ y $(v,u) \in E_B$ con $u \neq v$, entonces la composición en paralelo no resulta ser un RBD válido. 
+Tal como vimos en la presentación del problema en la \autoref{sec:intro_problematica}, en este tipo de composición podría introducirse un ciclo en el grafo resultante, debido a que $A$ y $B$ pueden compartir componentes. Por ejemplo, si tenemos $(u,v) \in E_A$ y $(v,u) \in E_B$ con $u \neq v$, entonces la composición en paralelo no resulta ser un RBD válido. Esto es bastante limitante a nivel expresivo, dado que no podemos modelar sistemas con componentes que interactúan o dependen entre sí, algo frecuente en sistemas industriales en la práctica.
+Ahora, la pregunta que nos interesa responder: ¿Podemos extender los RBD permitiendo ciclos en el grafo, sin perder semántica? Esto será propiamente abordado en el \autoref{chapter:crbd}, donde presentamos una solución a este problema.  
 
-Esto va en dirección opuesta a ciertas propiedades semánticas o estructurales que nos interesa probar sobre el modelo, como por ejemplo, la \textit{clausura operacional} (toda composición sigue siendo un RBD). Una manera directa de garantizar que la composición siempre se mantenga como un RBD válido, es exigir que los conjuntos de nodos sean estrictamente disjuntos --pues sería imposible introducir un ciclo--. Sin embargo, esta restricción limita la expresividad del modelo, imposibilitando la representación de sistemas complejos e interconectados mientras cumplimos la propiedad de \textit{composicionalidad}. Esta sostiene que cualquier RBD puede ser construido como una secuencia de composiciones en serie y paralelo. Si decidiéramos restringir la operación a nodos disjuntos, el ejemplo del grafo puente (CITAR Anexo) es suficiente para probar el no cumplimiento de la propiedad de composicionalidad. 
-Esta última nos interesa particularmente, en pos de tener un modelo computable, dado que permite deducir la semántica de una composición a partir de sus partes individuales, i.e. a partir de $A$ y $B$, los sistemas siendo compuestos. 
+Asimismo, esto va en dirección opuesta a tres propiedades semánticas o estructurales que nos interesa probar sobre el modelo, como la \textbf{\textit{clausura operacional}} (toda composición sigue siendo un RBD). Una manera directa de garantizar que la composición siempre se mantenga como un RBD válido, es exigir que los conjuntos de nodos sean estrictamente disjuntos --pues sería imposible introducir un ciclo--. Sin embargo, esta restricción limita la expresividad del modelo, imposibilitando la representación de sistemas complejos e interconectados mientras cumplimos la propiedad de \textbf{\textit{composicionalidad}}. Esta última sostiene que cualquier RBD puede ser construido como una secuencia de composiciones en serie y paralelo. Si decidiéramos restringir la operación a nodos disjuntos, el ejemplo del grafo puente (CITAR Anexo) es suficiente para probar el no cumplimiento de la propiedad. 
 
-Estas problemáticas constituyen la motivación principal para introducir los RBD coloreados (cRBD), los cuales desarrollaremos en el próximo capítulo (\ref{chapter:crbd}), donde probamos el cumplimiento de estas propiedades. Antes de proceder con la definición de composición serial, analicemos un ejemplo para remarcar dos particularidades:
+Contar con un modelo composicional y cerrado bajo operadores resulta de particular interés, ya que permite garantizar su computabilidad y posterior análisis a través de programas. Esto además es el primer paso para poder deducir la semántica de una composición a partir de sus partes individuales, i.e. a partir de $A$ y $B$, los sistemas siendo compuestos. Lo recién mencionado, es la tercera propiedad, que llamaremos \textbf{\textit{modularidad}}.
+
+Estas problemáticas constituyen la motivación principal para introducir los RBD coloreados (cRBD), los cuales desarrollaremos en el \autoref{chapter:crbd}, donde probamos el cumplimiento de estas propiedades y extendemos la expresividad del modelo, permitiendo ciclos en el grafo. Antes de proceder con la definición de composición serial, analicemos un ejemplo para remarcar dos particularidades:
 
 \begin{figure}[H]
     \centering
@@ -212,7 +214,7 @@ Estas problemáticas constituyen la motivación principal para introducir los RB
         \label{fig:comp_ser_b}
     \end{subfigure}
 
-    \vspace{0.5cm} % Separación vertical entre filas
+    \vspace{0.0cm} % Separación vertical entre filas
 
     % Fila inferior: resultado de la composición
     \begin{subfigure}[b]{0.75\textwidth}
@@ -228,7 +230,7 @@ Estas problemáticas constituyen la motivación principal para introducir los RB
 
 A diferencia de la composición paralela, la composición en serie exige que los sistemas no compartan componentes internos (i.e., se requiere estrictamente que ${V_f}_A \cap {V_f}_B = \emptyset$). Esta restricción es indispensable para preservar la estructura semántica correcta de una ejecución secuencial. 
 
-Más aún, la construcción de los conjuntos del grafo compuesto: $V_{;}$ y $E_{;}$ está diseñada para eliminar los nodos de transición intermedios ($\nd_A$ y $\start_B$) que, naturalmente, permanecerían en el grafo resultante siendo unificados. En lugar de fusionarlos en un único nodo intermedio que actúe como cuello de botella, esta operación conecta directamente los predecesores en $A$ con los sucesores en $B$, asegurando un flujo estructural continuo entre ambos sistemas y conservando los caminos puramente conformados por nodos funcionales.
+Más aún, la construcción de los conjuntos del grafo compuesto: $V_{;}$ y $E_{;}$ está diseñada para eliminar los nodos de transición intermedios ($\nd_A$ y $\start_B$) que, naturalmente, permanecerían en el grafo resultante siendo unificados. En lugar de fusionarlos en un único nodo intermedio que actúe como cuello de botella, esta operación conecta directamente $A$ con $B$, asegurando un flujo estructural continuo entre ambos sistemas y conservando los caminos puramente conformados por nodos funcionales.
 
 \begin{definition}[Composición en Serie de RBD]
     Dado ${V_f}_A \cap {V_f}_B = \emptyset$, definimos en primer lugar la composición en serie de los grafos subyacentes $G_A$, $G_B$. Sean:
@@ -249,9 +251,49 @@ Más aún, la construcción de los conjuntos del grafo compuesto: $V_{;}$ y $E_{
 
 Es importante remarcar que asumimos asociatividad a izquierda tanto en la composición serial como paralela. Esto significa por ejemplo que: $S_1 ; S_2 ; S_3 \equiv (S_1 ; S_2) ; S_3$.
 
-En cuanto a lo abordado previamente con respecto a propiedades semánticas y estructurales que nos interesa cumplir en el modelo, repasemos que el hecho de autorizar a los sistemas siendo compuestos en paralelo a compartir nodos, nos concede la capacidad de probar la siguiente propiedad, que llamaremos \textit{composicionalidad}: `dado un RBD arbitrario $S$, existe una secuencia de composiciones en serie y paralelo a partir de RBDs básicos que es igual a $S$'. Es decir que, a partir de un RBD individual por cada componente, podemos formular el sistema en su totalidad.
+En cuanto a lo abordado previamente con respecto a propiedades semánticas y estructurales que nos interesa cumplir en el modelo, notemos que el hecho de autorizar a los sistemas siendo compuestos en paralelo a compartir nodos, nos concede la capacidad de probar la propiedad de composicionalidad: `dado un RBD arbitrario $S$, existe una secuencia de composiciones en serie y paralelo a partir de RBDs básicos que es igual a $S$'. Es decir que, a partir de un RBD individual por cada componente, podemos formular el sistema en su totalidad. Esta es la única característica valiosa que podemos garantizar sobre los RBD, pues dejamos claro que la clausura bajo operadores no se cumple, y la modularidad no puede asegurarse. Justifiquemos con un contraejemplo porqué esto último no es posible:
 
-Antes de continuar con la proposición que demuestra la propiedad, veamos a qué nos referimos específicamente con RBD básico.
+\begin{figure}[H]
+    \centering
+    % Fila superior: componentes A y B
+    \begin{subfigure}[b]{0.49\textwidth}
+        \centering
+        \includegraphics[width=\textwidth, height=0.075\textheight]{04_rbd/figures/contej_Arbd.pdf}
+        \caption{RBD del sistema $A$}
+        \label{fig:contej_a}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[b]{0.49\textwidth}
+        \centering
+        \includegraphics[width=\textwidth, height=0.075\textheight]{04_rbd/figures/contej_Brbd.pdf}
+        \caption{RBD del sistema $B$}
+        \label{fig:contej_b}
+    \end{subfigure}
+
+    \vspace{0.0cm} % Separación vertical entre filas
+
+    % Fila inferior: resultado de la composición
+    \begin{subfigure}[b]{0.8\textwidth}
+        \centering
+        \includegraphics[width=0.8\textwidth, height=0.1\textheight]{04_rbd/figures/contej_rbd.pdf}
+        \caption{Composición en paralelo $A || B$}
+        \label{fig:contej_rbd}
+    \end{subfigure}
+
+    \caption{Contraejemplo modularidad RBDs.}
+    \label{fig:contej_rbd_modularidad}
+\end{figure}
+
+\noindent En la figura se observa que, aunque la composición en paralelo $A \parallel B$ produce un RBD válido, los \textit{path sets} minimales del sistema compuesto no pueden inferirse de manera modular a partir de $A$ y $B$. Al analizar las partes por separado, obtenemos:
+\begin{itemize}
+    \item Para el sistema $A$: $\Pi_{G_A}^{min} = \{\{\componente{X}, \componente{A}\}\}$.
+    \item Para el sistema $B$: $\Pi_{G_B}^{min} = \{\{\componente{B}, \componente{X}\}\}$.
+\end{itemize}
+
+Sin embargo, al componer ambos diagramas en paralelo, el componente compartido \componente{X} permite generar un camino nuevo que no existía ni en $A$ ni en $B$: $\start \to \componente{X} \to \nd$. En consecuencia, los path sets minimales de la composición resultan ser:
+$\Pi_{G_{\parallel}}^{\min} = \{\{\componente{X}\}\}$. Este nuevo path set $\{\componente{X}\}$ no solo era inexistente en las partes originales, sino que además absorbe por minimalidad a $\{\componente{X}, \componente{A}\}$ y $\{\componente{B}, \componente{X}\}$. Esto demuestra que en los RBD la semántica de la composición no puede derivarse únicamente a partir de la semántica de los subsistemas individuales.
+
+Uno de los objetivos del siguiente capítulo, es mantener la composicionalidad en cRBDs y cumplir las propiedades de clausura operacional y modularidad. Antes de continuar con la proposición que demuestra la propiedad de composicionalidad para RBDs, veamos a qué nos referimos específicamente con RBD básico.
 Un \textit{RBD básico} es un RBD cuyo grafo subyacente es 
 
 $G = (\{\start,\componente{A}, \nd\}, \{(\start,\componente{A}), (\componente{A}, \nd)\})$. 
@@ -280,5 +322,5 @@ En este lema, $E(p_i)$ y $V(p_i)$ representan las aristas y los vértices que co
 \begin{proof}
     Sea $S = \rbd$ el RBD de un sistema, y sean $p_1, \dots, p_n$ los caminos dados por el Lema~\ref{lem:descomposicion_caminos}. Dado que cada $p_i$ es un único camino simple en $G$, el RBD correspondiente a cada $p_i$ puede construirse únicamente mediante la composición en serie de RBDs básicos. En particular, dado un camino $p_i = \start, v_1, \dots, v_j, \nd$, su RBD correspondiente es $S_{p_i} = S_{v_1} ; S_{v_2} ; \dots ; S_{v_j}$, donde cada $S_{v_m}$ ($1 \le m \le j$) es el RBD básico que tiene a $v_m$ como su único componente funcional.
 
-    A partir de esto, definimos $S' = S_{p_1} || \dots || S_{p_n}$. Queremos afirmar que $S' = S$. Dado que la composición en paralelo define el conjunto de aristas resultante como $E_{||} = E_{p_1} \cup \dots \cup E_{p_n}$ y el conjunto de vértices como $V_{||} = V_{p_1} \cup \dots \cup V_{p_n}$, es consecuencia del Lema~\ref{lem:descomposicion_caminos} que $E_{||} = E$ y, análogamente, $V_{||} = V$. Por lo tanto, los grafos subyacentes de $S'$ y $S$ son idénticos, entonces probamos $S' = S$.
+    A partir de esto, definimos $S' = S_{p_1} || \dots || S_{p_n}$. Queremos afirmar que $S' = S$. Dado que la composición en paralelo define el conjunto de aristas resultante como $E_{||} = E_{p_1} \cup \dots \cup E_{p_n}$ y el conjunto de vértices como $V_{||} = V_{p_1} \cup \dots \cup V_{p_n}$, es consecuencia del Lema~\ref{lem:descomposicion_caminos} que $E_{||} = E$ y, análogamente, $V_{||} = V$. Por lo tanto, los grafos subyacentes de $S'$ y $S$ son iguales, entonces probamos $S' = S$.
 \end{proof}
